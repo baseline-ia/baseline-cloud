@@ -1,0 +1,149 @@
+<div class="page-header">
+  <h1><%= it.t('page.overview.title') %></h1>
+  <p class="subtitle"><%= it.t('page.overview.subtitle') %></p>
+</div>
+
+<div class="stat-grid">
+  <article class="stat-card accent-info">
+    <p class="stat-value"><%= it.activeProjects %></p>
+    <p class="stat-label"><%= it.t('stat.active_projects_7d') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= Math.round((it.timeThisWeek.totalMs / 3600000) * 10) / 10 %><span class="unit">h</span></p>
+    <p class="stat-label"><%= it.t('stat.time_this_week') %></p>
+  </article>
+  <% if (it.roi && it.roi.closedChanges > 0) { %>
+    <article class="stat-card accent-success">
+      <p class="stat-value"><%= Math.round(it.roi.totalSavedMin / 60) %><span class="unit">h</span></p>
+      <p class="stat-label"><%= it.t('stat.time_saved_total') %></p>
+    </article>
+    <article class="stat-card accent-success">
+      <p class="stat-value"><%= it.roi.roiPct %><span class="unit">%</span></p>
+      <p class="stat-label"><%= it.t('stat.roi') %></p>
+    </article>
+    <article class="stat-card">
+      <p class="stat-value"><%= it.roi.openChanges + it.roi.closedChanges %></p>
+      <p class="stat-label"><%= it.t('stat.total_changes') %></p>
+    </article>
+  <% } %>
+  <article class="stat-card">
+    <p class="stat-value"><%= it.stats.activeDevsLast7d %></p>
+    <p class="stat-label"><%= it.t('stat.active_devs_7d') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= it.stats.totalDevs %></p>
+    <p class="stat-label"><%= it.t('stat.total_devs') %></p>
+  </article>
+  <% if (it.roi && it.roi.closedChanges > 0) { %>
+    <article class="stat-card accent-info">
+      <p class="stat-value"><%= it.roi.totalCommits %></p>
+      <p class="stat-label"><%= it.t('stat.commits') %></p>
+    </article>
+  <% } %>
+</div>
+
+<% if (it.stats.totalEvents === 0) { %>
+  <div class="empty-state">
+    <div class="icon">📡</div>
+    <p><strong><%= it.t('empty_state.no_events_title') %></strong></p>
+    <p><%= it.t('empty_state.no_events_help') %></p>
+  </div>
+<% } else { %>
+
+  <div class="panel-grid-2">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.time_per_project') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.time_per_project_sub') %></p>
+        </div>
+      </div>
+      <% if (it.timeAgg.byProject.length === 0) { %>
+        <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+      <% } else { %>
+        <div class="chart-wrap">
+          <canvas id="timeByProject" data-chart='<%~ JSON.stringify({ type: "bar", data: { labels: it.timeAgg.byProject.map(p => p.key), datasets: [{ label: it.t('common.hours'), data: it.timeAgg.byProject.map(p => Math.round(p.totalMs / 3600000 * 10) / 10), backgroundColor: "#4f46e5", borderRadius: 6 }] }, options: { plugins: { legend: { display: false } } } }) %>'></canvas>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.time_by_developer') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.time_by_developer_sub') %></p>
+        </div>
+      </div>
+      <% if (it.timeAgg.byDeveloper.length === 0) { %>
+        <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+      <% } else { %>
+        <div class="chart-wrap">
+          <canvas id="timeByDeveloper" data-chart='<%~ JSON.stringify({ type: "bar", data: { labels: it.timeAgg.byDeveloper.map(d => d.key), datasets: [{ label: it.t('common.hours'), data: it.timeAgg.byDeveloper.map(d => Math.round(d.totalMs / 3600000 * 10) / 10), backgroundColor: "#8b5cf6", borderRadius: 6 }] }, options: { indexAxis: "y", plugins: { legend: { display: false } } } }) %>'></canvas>
+        </div>
+      <% } %>
+    </article>
+  </div>
+
+  <% if (it.roi && it.roi.closedChanges > 0) { %>
+  <div class="panel-grid-2">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.time_saved_per_change') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.time_saved_per_change_sub') %></p>
+        </div>
+        <a href="/dashboard/changes" style="font-size: 0.875rem;"><%= it.t('chart.all_changes') %> →</a>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="timeSavedByChange" data-chart='<%~ JSON.stringify({ type: "bar", data: { labels: it.timeSaved.map(c => c.name), datasets: [{ label: it.t('common.hours') + ' saved', data: it.timeSaved.map(c => Math.round(c.savedMin / 60 * 10) / 10), backgroundColor: "#10b981", borderRadius: 6 }] }, options: { plugins: { legend: { display: false } } } }) %>'></canvas>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.roi_by_work_type') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.roi_by_work_type_sub') %></p>
+        </div>
+      </div>
+      <% if (it.roiByWorkType.length === 0) { %>
+        <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+      <% } else { %>
+        <div class="chart-wrap">
+          <canvas id="roiByWorkType" data-chart='<%~ JSON.stringify({ type: "doughnut", data: { labels: it.roiByWorkType.map(w => w.workType), datasets: [{ data: it.roiByWorkType.map(w => Math.round(w.savedMin / 60 * 10) / 10), backgroundColor: ["#4f46e5", "#10b981", "#f59e0b", "#f43f5e", "#3b82f6", "#8b5cf6", "#ec4899"], borderWidth: 0 }] }, options: { cutout: "60%", plugins: { legend: { position: "right" } } } }) %>'></canvas>
+        </div>
+      <% } %>
+    </article>
+  </div>
+  <% } %>
+
+  <div class="panel-grid-2">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.time_by_work_type') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.time_by_work_type_sub') %></p>
+        </div>
+      </div>
+      <% if (it.timeAgg.byWorkType.length === 0) { %>
+        <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+      <% } else { %>
+        <div class="chart-wrap">
+          <canvas id="timeByWorkType" data-chart='<%~ JSON.stringify({ type: "doughnut", data: { labels: it.timeAgg.byWorkType.map(w => w.key), datasets: [{ data: it.timeAgg.byWorkType.map(w => Math.round(w.totalMs / 3600000 * 10) / 10), backgroundColor: ["#4f46e5", "#10b981", "#f59e0b", "#f43f5e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"], borderWidth: 0 }] }, options: { cutout: "60%", plugins: { legend: { position: "right" } } } }) %>'></canvas>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.recent_activity') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.recent_activity_sub') %></p>
+        </div>
+        <a href="/dashboard/activity" style="font-size: 0.875rem;"><%= it.t('chart.view_all') ?? 'View all' %> →</a>
+      </div>
+      <%~ include('../partials/activity-feed', { recent: it.recent }) %>
+    </article>
+  </div>
+
+<% } %>

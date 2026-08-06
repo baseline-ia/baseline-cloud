@@ -1,0 +1,52 @@
+<div class="page-header">
+  <h1><%= it.t('page.admin_users.title') %></h1>
+  <p class="subtitle"><%= it.t('page.admin_users.subtitle') %></p>
+</div>
+
+<article class="panel">
+  <details>
+    <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">▸ <%= it.t('page.admin_users.create_new') %></summary>
+    <form method="post" action="/dashboard/admin/users" style="margin-top: 1rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end;">
+        <label><%= it.t('form.username') %> <input type="text" name="username" required pattern="[a-zA-Z0-9_-]+" /></label>
+        <label><%= it.t('form.email') %> <input type="email" name="email" required /></label>
+        <label><%= it.t('form.role') ?>
+          <select name="role" required>
+            <option value="member"><%= it.t('form.role_member') %></option>
+            <option value="admin"><%= it.t('form.role_admin') %></option>
+          </select>
+        </label>
+        <button type="submit"><%= it.t('button.create') %></button>
+      </div>
+      <label style="margin-top: 0.75rem;"><%= it.t('form.password') %> <input type="password" name="password" required minlength="8" style="max-width: 280px;" /></label>
+    </form>
+  </details>
+</article>
+
+<article class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><%= it.t('page.admin_users.all_users') %></h2>
+  </div>
+  <table>
+    <thead>
+      <tr><th><%= it.t('form.username') %></th><th><%= it.t('form.email') %></th><th><%= it.t('form.role') %></th><th>Status</th><th>Created</th><th>Last login</th></tr>
+    </thead>
+    <tbody>
+      <% it.users.forEach(function(u) { %>
+        <tr>
+          <td>
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem;">
+              <span style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #8b5cf6); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;"><%= u.username.charAt(0).toUpperCase() %></span>
+              <code style="color: var(--primary); font-weight: 500;"><%= u.username %></code>
+            </span>
+          </td>
+          <td><%= u.email %></td>
+          <td><span class="badge <%= u.role === 'admin' ? 'badge-admin' : 'badge-member' %>"><%= it.t('badge.' + u.role) %></span></td>
+          <td><%= u.enabled ? '<span class="text-success">' + it.t('badge.enabled') + '</span>' : '<span class="text-danger">' + it.t('badge.disabled') + '</span>' %></td>
+          <td class="text-muted text-mono" style="font-size: 0.75rem;"><%= new Date(u.createdAt).toLocaleString() %></td>
+          <td class="text-muted text-mono" style="font-size: 0.75rem;"><%= u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : '—' %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</article>

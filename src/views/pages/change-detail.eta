@@ -1,0 +1,96 @@
+<div class="page-header">
+  <div class="flex-between">
+    <div>
+      <h1><code style="font-size: 1.5rem; color: var(--text);"><%= it.change.changeName %></code></h1>
+      <p class="subtitle">
+        <a href="/dashboard/changes" style="color: var(--text-muted); text-decoration: none;"><%= it.t('nav.back_to') %> changes</a>
+      </p>
+    </div>
+    <% if (it.change.closedAt) { %>
+      <span class="badge badge-closed"><%= it.t('badge.closed') %></span>
+    <% } else { %>
+      <span class="badge badge-open"><%= it.t('badge.open') %></span>
+    <% } %>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <article class="stat-card">
+    <p class="stat-value"><span class="event-type" style="font-size: 1.125rem; padding: 0.375rem 0.875rem;"><%= it.change.workType %></span></p>
+    <p class="stat-label"><%= it.t('page.change_detail.work_type') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= it.change.actualMin !== null ? (Math.round(it.change.actualMin / 60 * 10) / 10 + 'h') : '—' %></p>
+    <p class="stat-label"><%= it.t('page.change_detail.actual_time') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= Math.round(it.change.estimatedBaselineMin / 60 * 10) / 10 %>h</p>
+    <p class="stat-label"><%= it.t('page.change_detail.baseline_no') %></p>
+  </article>
+  <article class="stat-card accent-success">
+    <p class="stat-value" style="color: var(--success);"><%= it.change.savedMin !== null ? ('+' + Math.round(it.change.savedMin / 60 * 10) / 10 + 'h') : '—' %></p>
+    <p class="stat-label"><%= it.t('page.change_detail.time_saved') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= it.change.totalCommits %></p>
+    <p class="stat-label"><%= it.t('page.change_detail.commits') %></p>
+  </article>
+</div>
+
+<article class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><%= it.t('page.change_detail.timeline') %></h2>
+    <p class="panel-subtitle"><%= it.t('page.change_detail.timeline_sub') %></p>
+  </div>
+
+  <div class="timeline">
+    <% it.timeline.opens.forEach(function(o) { %>
+      <div class="timeline-item opened">
+        <div class="time"><%= o.at instanceof Date ? o.at.toLocaleString() : new Date(o.at).toLocaleString() %></div>
+        <div class="label">📂 <%= it.t('page.change_detail.opened') %></div>
+        <% if (o.title) { %><div class="detail"><%= o.title %></div><% } %>
+        <div class="detail">
+          <span class="event-type"><%= o.workType %></span>
+          <% if (o.workType === 'feature' || o.workType === 'fix' || o.workType === 'migration' || o.workType === 'new-project') { %>
+            <% const bas = (it.baselines && it.baselines[o.workType]) || 0; %>
+            <span class="text-muted">· estimated <%= Math.round(bas / 60 * 10) / 10 %>h without baseline</span>
+          <% } %>
+        </div>
+      </div>
+    <% }); %>
+
+    <% it.timeline.commits.forEach(function(c) { %>
+      <div class="timeline-item commit">
+        <div class="time"><code style="font-size: 0.75rem;"><%= c.shortSha %></code> · <%= c.at instanceof Date ? c.at.toLocaleString() : new Date(c.at).toLocaleString() %></div>
+        <div class="label">Commit</div>
+        <div class="detail"><%= c.message.split('\n')[0].slice(0, 120) %></div>
+        <% if (c.filesChanged) { %>
+          <div class="detail text-muted text-mono" style="font-size: 0.75rem;">
+            <%= c.filesChanged %> files
+            <% if (c.linesAdded) { %> · <span class="text-success">+<%= c.linesAdded %></span><% } %>
+            <% if (c.linesRemoved) { %> · <span class="text-danger">-<%= c.linesRemoved %></span><% } %>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+
+    <% it.timeline.closes.forEach(function(c) { %>
+      <div class="timeline-item closed">
+        <div class="time"><%= c.at instanceof Date ? c.at.toLocaleString() : new Date(c.at).toLocaleString() %></div>
+        <div class="label">✅ <%= it.t('badge.closed') %></div>
+        <div class="detail">
+          <% if (c.verdict) { %>verdict: <span class="event-type"><%= c.verdict %></span><% } %>
+          <% if (c.durationMs) { %> · took <%= Math.round(c.durationMs / 60 / 1000) %> min<% } %>
+        </div>
+      </div>
+    <% }); %>
+
+    <% if (it.timeline.opens.length > 0 && it.timeline.closes.length === 0) { %>
+      <div class="timeline-item" style="opacity: 0.5;">
+        <div class="time">—</div>
+        <div class="label text-muted"><%= it.t('page.change_detail.still_open') %></div>
+        <div class="detail text-muted"><%= it.t('page.change_detail.still_open_help') %></div>
+      </div>
+    <% } %>
+  </div>
+</article>

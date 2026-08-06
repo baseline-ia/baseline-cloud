@@ -1,0 +1,53 @@
+<div class="page-header">
+  <h1><%= it.t('page.admin_tokens.title') %></h1>
+  <p class="subtitle"><%= it.t('page.admin_tokens.subtitle') %></p>
+</div>
+
+<article class="panel">
+  <details>
+    <summary style="cursor: pointer; font-weight: 600; padding: 0.5rem 0;">▸ <%= it.t('page.admin_tokens.issue_new') %></summary>
+    <form method="post" action="/dashboard/admin/tokens" style="margin-top: 1rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: end;">
+        <label><%= it.t('page.admin_tokens.name') %> <input type="text" name="name" required value="CLI" /></label>
+        <label><%= it.t('page.admin_tokens.your_password') %> <input type="password" name="password" required autocomplete="current-password" /></label>
+        <button type="submit"><%= it.t('page.admin_tokens.issue') %></button>
+      </div>
+    </form>
+  </details>
+</article>
+
+<article class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><%= it.t('page.admin_tokens.all_tokens') %></h2>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Prefix</th><th>Name</th><th>User</th><th>Created</th><th>Last used</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <% it.tokens.forEach(function(row) { %>
+        <tr>
+          <td><code style="font-size: 0.75rem;"><%= row.token.tokenPrefix %></code></td>
+          <td><%= row.token.name %></td>
+          <td><a href="/dashboard/developers/<%= encodeURIComponent(row.user.username) %>" style="color: inherit; text-decoration: none;"><code style="color: var(--primary);"><%= row.user.username %></code></a></td>
+          <td class="text-muted text-mono" style="font-size: 0.75rem;"><%= new Date(row.token.createdAt).toLocaleString() %></td>
+          <td class="text-muted text-mono" style="font-size: 0.75rem;"><%= row.token.lastUsedAt ? new Date(row.token.lastUsedAt).toLocaleString() : '—' %></td>
+          <td>
+            <% if (row.token.revokedAt) { %>
+              <span class="badge badge-revoked"><%= it.t('badge.revoked') %></span>
+            <% } else { %>
+              <span class="badge badge-closed"><%= it.t('badge.active') %></span>
+            <% } %>
+          </td>
+          <td>
+            <% if (!row.token.revokedAt) { %>
+              <form method="post" action="/dashboard/admin/tokens/<%= row.token.id %>/revoke" style="display: inline;" onsubmit="return confirm('Revoke this token? The CLI will need to re-login.');">
+                <button type="submit" class="secondary" style="padding: 0.25rem 0.625rem; font-size: 0.75rem;"><%= it.t('button.revoke') %></button>
+              </form>
+            <% } %>
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</article>

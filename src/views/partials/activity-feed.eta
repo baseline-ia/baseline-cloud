@@ -1,0 +1,14 @@
+<% if (it.recent.length === 0) { %>
+  <div class="empty-state"><p>No events yet.</p></div>
+<% } else { %>
+  <ul class="activity-feed">
+    <% it.recent.forEach(function(e) { %>
+      <li class="activity-row">
+        <span class="activity-avatar"><%= e.username.charAt(0).toUpperCase() %></span>
+        <span class="activity-username"><%= e.username %></span>
+        <span class="activity-sep">·</span>
+        <span class="activity-project"><%= e.project %></span>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>

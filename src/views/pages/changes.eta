@@ -1,0 +1,172 @@
+<div class="page-header">
+  <h1><%= it.t('page.changes.title') %></h1>
+  <p class="subtitle"><%= it.t('page.changes.subtitle') %></p>
+</div>
+
+<div class="stat-grid">
+  <article class="stat-card accent-success">
+    <p class="stat-value"><%= it.roi.closedChanges %></p>
+    <p class="stat-label"><%= it.t('badge.closed') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= it.roi.openChanges %></p>
+    <p class="stat-label"><%= it.t('badge.open') %></p>
+  </article>
+  <article class="stat-card accent-success">
+    <p class="stat-value"><%= Math.round(it.roi.totalSavedMin / 60) %><span class="unit"><%= it.t('common.hours') %></span></p>
+    <p class="stat-label"><%= it.t('stat.time_saved_total') %></p>
+  </article>
+  <article class="stat-card accent-info">
+    <p class="stat-value"><%= it.roi.roiPct %><span class="unit"><%= it.t('common.percent') %></span></p>
+    <p class="stat-label"><%= it.t('stat.roi') %></p>
+  </article>
+  <article class="stat-card">
+    <p class="stat-value"><%= it.roi.totalCommits %></p>
+    <p class="stat-label"><%= it.t('stat.commits') %></p>
+  </article>
+</div>
+
+<% if (it.roi.closedChanges > 0) { %>
+
+  <div class="panel-grid-2">
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.time_saved_per_change') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.time_saved_per_change_sub') %></p>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="timeSavedByChange" data-chart='<%~ JSON.stringify({ type: "bar", data: { labels: it.timeSaved.map(c => c.name), datasets: [{ label: it.t('common.hours') + " saved", data: it.timeSaved.map(c => Math.round(c.savedMin / 60 * 10) / 10), backgroundColor: "#10b981", borderRadius: 6 }] }, options: { plugins: { legend: { display: false } } } }) %>'></canvas>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title"><%= it.t('chart.roi_by_work_type') %></h2>
+          <p class="panel-subtitle"><%= it.t('chart.roi_by_work_type_sub') %></p>
+        </div>
+      </div>
+      <% if (it.byWorkType.length === 0) { %>
+        <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+      <% } else { %>
+        <div class="chart-wrap">
+          <canvas id="roiByWorkType" data-chart='<%~ JSON.stringify({ type: "doughnut", data: { labels: it.byWorkType.map(w => w.workType), datasets: [{ data: it.byWorkType.map(w => Math.round(w.savedMin / 60 * 10) / 10), backgroundColor: ["#4f46e5", "#10b981", "#f59e0b", "#f43f5e", "#3b82f6", "#8b5cf6", "#ec4899"], borderWidth: 0 }] }, options: { cutout: "60%", plugins: { legend: { position: "right" } } }) %>'></canvas>
+        </div>
+      <% } %>
+    </article>
+  </div>
+
+<% } %>
+
+<div class="panel-grid-2">
+  <article class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><%= it.t('page.developers.all_developers') %></h2>
+    </div>
+    <% if (it.roi.byDeveloper.length === 0) { %>
+      <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+    <% } else { %>
+      <table>
+        <thead><tr><th><%= it.t('form.username') %></th><th class="text-right"><%= it.t('stat.total_changes') %></th><th class="text-right"><%= it.t('stat.time_saved_total') %></th><th>Progress</th></tr></thead>
+        <tbody>
+          <% const maxSaved = Math.max(...it.roi.byDeveloper.map(d => d.savedMin), 1); %>
+          <% it.roi.byDeveloper.forEach(function(d) { %>
+            <tr>
+              <td><a href="/dashboard/developers/<%= encodeURIComponent(d.username) %>" style="text-decoration: none; color: inherit;"><code style="color: var(--primary); font-weight: 500;"><%= d.username %></code></a></td>
+              <td class="text-right"><%= d.changes %></td>
+              <td class="text-right text-success"><%= Math.round(d.savedMin / 60 * 10) / 10 %>h</td>
+              <td>
+                <div class="progress"><div class="progress-bar success" style="width: <%= Math.round(d.savedMin / maxSaved * 100) %>%"></div></div>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">By work type</h2>
+    </div>
+    <% if (it.roi.byWorkType.length === 0) { %>
+      <div class="empty-state"><p><%= it.t('empty.no_changes_yet') %></p></div>
+    <% } else { %>
+      <table>
+        <thead><tr><th>Work type</th><th class="text-right">Count</th><th class="text-right"><%= it.t('stat.time_saved_total') %></th></tr></thead>
+        <tbody>
+          <% it.roi.byWorkType.forEach(function(row) { %>
+            <tr>
+              <td><span class="event-type"><%= row.workType %></span></td>
+              <td class="text-right"><%= row.count %></td>
+              <td class="text-right text-success"><%= Math.round(row.savedMin / 60 * 10) / 10 %>h</td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </article>
+</div>
+
+<article class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><%= it.t('page.changes.all_changes') %></h2>
+  </div>
+  <% if (it.changes.length === 0) { %>
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <p><strong><%= it.t('page.changes.no_changes') %></strong></p>
+      <p><%= it.t('page.changes.no_changes_help') %></p>
+    </div>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Change</th>
+          <th>Type</th>
+          <th>Opened by</th>
+          <th>Status</th>
+          <th class="text-right">Actual</th>
+          <th class="text-right">Baseline</th>
+          <th class="text-right">Saved</th>
+          <th class="text-right">ROI</th>
+          <th class="text-right">Commits</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% it.changes.forEach(function(c) { %>
+          <tr>
+            <td><a href="/dashboard/changes/<%= encodeURIComponent(c.changeName) %>" style="text-decoration: none; color: inherit;"><code style="color: var(--primary); font-weight: 500;"><%= c.changeName %></code></a></td>
+            <td><span class="event-type"><%= c.workType %></span></td>
+            <td><code><%= c.username %></code></td>
+            <td>
+              <% if (c.closedAt) { %>
+                <span class="badge badge-closed"><%= it.t('badge.closed') %></span>
+              <% } else { %>
+                <span class="badge badge-open"><%= it.t('badge.open') %></span>
+              <% } %>
+            </td>
+            <td class="text-right">
+              <%= c.actualMin !== null ? (Math.round(c.actualMin / 60 * 10) / 10 + 'h') : '—' %>
+            </td>
+            <td class="text-right">
+              <%= Math.round(c.estimatedBaselineMin / 60 * 10) / 10 %>h
+              <br /><span class="badge <%= c.estimateSource === 'per-change' || c.estimateSource === 'bucket' ? 'badge-source' : 'badge-source-default' %>"><%= c.estimateSource === 'per-change' || c.estimateSource === 'bucket' ? it.t('badge.plan') : it.t('badge.default') %></span>
+            </td>
+            <td class="text-right text-success">
+              <%= c.savedMin !== null ? ('+' + Math.round(c.savedMin / 60 * 10) / 10 + 'h') : '—' %>
+            </td>
+            <td class="text-right">
+              <% if (c.roiPct !== null) { %>
+                <span class="text-success"><%= c.roiPct %>%</span>
+              <% } else { %>—<% } %>
+            </td>
+            <td class="text-right"><%= c.totalCommits %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</article>

@@ -1,0 +1,69 @@
+<div class="page-header">
+  <h1><%= it.t('page.developers.title') %></h1>
+  <p class="subtitle"><%= it.t('page.developers.subtitle') %></p>
+</div>
+
+<% if (it.devs.length === 0) { %>
+  <div class="empty-state">
+    <div class="icon">👥</div>
+    <p><strong><%= it.t('page.developers.no_developers') %></strong></p>
+    <p><%= it.t('page.developers.no_developers_help') %></p>
+  </div>
+<% } else { %>
+
+  <% if (it.topDevs.length > 0) { %>
+  <article class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><%= it.t('page.developers.activity_30d') %></h2>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="devActivity" data-chart='<%~ JSON.stringify({ type: "bar", data: { labels: it.topDevs.map(d => d.username), datasets: [{ label: it.t('chart.events_per_day'), data: it.topDevs.map(d => d.count), backgroundColor: "#4f46e5", borderRadius: 6 }] }, options: { plugins: { legend: { display: false } } } }) %>'></canvas>
+    </div>
+  </article>
+  <% } %>
+
+  <article class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><%= it.t('page.developers.all_developers') %></h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th><%= it.t('form.username') %></th>
+          <th class="text-right">Total events (30d)</th>
+          <th class="text-right">Error rate</th>
+          <th>Last seen</th>
+          <th>Top commands</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% it.devs.forEach(function(d) { %>
+          <tr>
+            <td>
+              <a href="/dashboard/developers/<%= encodeURIComponent(d.username) %>" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+                <span style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #8b5cf6); color: white; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.75rem;"><%= d.username.charAt(0).toUpperCase() %></span>
+                <code style="color: var(--primary); font-weight: 500;"><%= d.username %></code>
+              </a>
+            </td>
+            <td class="text-right"><strong><%= d.totalEvents %></strong></td>
+            <td class="text-right">
+              <% if (d.errorRate > 5) { %>
+                <span class="text-danger"><%= d.errorRate %>%</span>
+              <% } else { %>
+                <span class="text-muted"><%= d.errorRate %>%</span>
+              <% } %>
+            </td>
+            <td class="text-muted" style="font-size: 0.875rem;">
+              <%= d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : '<span class="empty">never</span>' %>
+            </td>
+            <td>
+              <% d.topCommands.forEach(function(t) { %>
+                <span class="event-type" style="margin-right: 0.25rem;"><%= t.eventType %></span>
+              <% }); %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </article>
+<% } %>

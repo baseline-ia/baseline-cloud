@@ -1,0 +1,31 @@
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="brand-logo">b</div>
+    <h1><%= it.t('login.title') %></h1>
+    <p class="subtitle"><%= it.t('login.subtitle') %></p>
+
+    <% if (it.error) { %>
+      <div class="error-msg"><%= it.error %></div>
+    <% } %>
+
+    <form method="post" action="/dashboard/login">
+      <input type="hidden" name="next" value="<%= it.next %>" />
+      <label>
+        <%= it.t('form.username') %>
+        <input type="text" name="username" required autofocus autocomplete="username" />
+      </label>
+      <label>
+        <%= it.t('form.password') %>
+        <input type="password" name="password" required autocomplete="current-password" />
+      </label>
+      <button type="submit"><%= it.t('button.signin') %></button>
+    </form>
+
+    <p class="help-text">
+      <%= it.t('login.signup_help') %>
+      <pre style="margin: 0.5rem 0 0; padding: 0.5rem; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 0.75rem; overflow-x: auto;"><code>curl -X POST /v1/auth/signup \\
+  -H 'Content-Type: application/json' \\
+  -d '{"username":"...","email":"...","password":"..."}'</code></pre>
+    </p>
+  </div>
+</div>

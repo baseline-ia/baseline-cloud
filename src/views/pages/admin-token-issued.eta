@@ -1,0 +1,21 @@
+<div class="page-header">
+  <h1><%= it.t('page.token_issued.title') %></h1>
+  <p class="subtitle"><%= it.t('page.token_issued.subtitle') %></p>
+</div>
+
+<article class="panel" style="border-color: var(--success); border-left: 4px solid var(--success);">
+  <div class="flex" style="align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+    <span style="font-size: 1.5rem;">🔑</span>
+    <strong><%= it.t('page.token_issued.raw_label') %> (name: <%= it.token.name %>)</strong>
+  </div>
+  <pre style="background: var(--bg-subtle); border: 1px solid var(--border); padding: 1rem; border-radius: var(--radius-sm); font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; word-break: break-all; margin: 0;"><%= it.token.raw %></pre>
+
+  <h3 style="margin-top: 1.5rem; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);"><%= it.t('page.token_issued.use_label') %></h3>
+  <pre style="background: #0f172a; color: #f1f5f9; padding: 0.875rem; border-radius: var(--radius-sm); font-family: 'JetBrains Mono', monospace; font-size: 0.8125rem; margin: 0.5rem 0 0;"><code style="color: #f1f5f9;">baseline login --server <%= it.user?.username ? "https://baseline-cloud.yourcompany.com" : "$CLOUD_URL" %> --token <%= it.token.raw %></code></pre>
+
+  <p style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.875rem;">
+    <%= it.t('page.token_issued.env_help') %>
+  </p>
+</article>
+
+<p style="margin-top: 1.5rem;"><a href="/dashboard/admin/tokens"><%= it.t('nav.back_to') %> tokens</a></p>

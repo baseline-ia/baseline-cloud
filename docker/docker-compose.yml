@@ -1,0 +1,58 @@
+# docker compose up -d
+# Production-shape: postgres + cloud service with healthcheck.
+# Persistent data: postgres volume survives container restarts.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: baseline-cloud-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: baseline
+      POSTGRES_PASSWORD: baseline_dev
+      POSTGRES_DB: baseline_cloud
+    volumes:
+      - baseline-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baseline -d baseline_cloud"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    # Expose only on localhost for safety; remove the ports mapping if running
+    # behind a reverse proxy and the cloud service connects over the compose network.
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  cloud:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: baseline-cloud:latest
+    container_name: baseline-cloud
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      LOG_LEVEL: info
+      DATABASE_URL: postgres://baseline:baseline_dev@postgres:5432/baseline_cloud
+      # CHANGE THESE — generate with: openssl rand -base64 48
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set (generate with: openssl rand -base64 48)}"
+      TOKEN_PEPPER: "${TOKEN_PEPPER:?TOKEN_PEPPER must be set (generate with: openssl rand -base64 48)}"
+      BOOTSTRAP_ADMIN: ${BOOTSTRAP_ADMIN:-true}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  baseline-pg:
+    name: baseline-cloud-postgres-data

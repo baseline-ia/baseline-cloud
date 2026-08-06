@@ -1,0 +1,28 @@
+# Dependencies and build output
+node_modules
+dist
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# VCS and local agent metadata
+.git
+.gitignore
+.atl
+.atl/
+
+# Test output and caches
+coverage
+.cache
+.npm-cache
+npm-debug.log*
+
+# Local database artifacts
+data
+drizzle
+postgres:
+*.db
+*.sqlite
+*.sqlite3
