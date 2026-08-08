@@ -40,7 +40,7 @@ services:
       PORT: 3000
       HOST: 0.0.0.0
       LOG_LEVEL: info
-      DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}}"
+      DATABASE_URL: "${DATABASE_URL}"
       # CHANGE THESE — generate with: openssl rand -base64 48
       JWT_SECRET: "${JWT_SECRET}"
       TOKEN_PEPPER: "${TOKEN_PEPPER}"

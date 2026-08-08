@@ -55,6 +55,7 @@ curl -X POST http://localhost:3000/v1/auth/signup \
 export POSTGRES_USER=your_postgres_user
 export POSTGRES_PASSWORD=$(openssl rand -hex 32)
 export POSTGRES_DB=baseline_cloud
+export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
 export JWT_SECRET=$(openssl rand -base64 48)
 export TOKEN_PEPPER=$(openssl rand -base64 48)
 
@@ -84,7 +85,7 @@ docker compose -f docker/docker-compose.yml restart cloud
 - Schema managed with Drizzle migrations in `src/db/migrations/`
 - Generate a new migration after schema changes: `npm run db:generate`
 - Apply pending migrations: `npm run db:migrate` (also runs automatically on server start)
-- Connection: `DATABASE_URL=postgres://user:pass@host:5432/dbname`; in Compose, the cloud service uses the internal hostname `postgres` by default.
+- Connection: `DATABASE_URL=postgres://user:pass@host:5432/dbname`; in Compose, set the host to the internal service name `postgres`.
 
 The persistent volume `baseline-cloud-postgres-data` survives container restarts. To back up, use the configured database variables: `docker exec baseline-cloud-postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql`.
 
