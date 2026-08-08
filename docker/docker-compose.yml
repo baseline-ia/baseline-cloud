@@ -7,13 +7,13 @@ services:
     container_name: baseline-cloud-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: baseline
-      POSTGRES_PASSWORD: baseline_dev
-      POSTGRES_DB: baseline_cloud
+      POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER must be set}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}"
+      POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB must be set}"
     volumes:
       - baseline-pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U baseline -d baseline_cloud"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -40,7 +40,7 @@ services:
       PORT: 3000
       HOST: 0.0.0.0
       LOG_LEVEL: info
-      DATABASE_URL: postgres://baseline:baseline_dev@postgres:5432/baseline_cloud
+      DATABASE_URL: "${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}}"
       # CHANGE THESE — generate with: openssl rand -base64 48
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set (generate with: openssl rand -base64 48)}"
       TOKEN_PEPPER: "${TOKEN_PEPPER:?TOKEN_PEPPER must be set (generate with: openssl rand -base64 48)}"

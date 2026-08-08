@@ -52,6 +52,9 @@ curl -X POST http://localhost:3000/v1/auth/signup \
 
 ```bash
 # 1. Generate secrets
+export POSTGRES_USER=your_postgres_user
+export POSTGRES_PASSWORD=$(openssl rand -hex 32)
+export POSTGRES_DB=baseline_cloud
 export JWT_SECRET=$(openssl rand -base64 48)
 export TOKEN_PEPPER=$(openssl rand -base64 48)
 
@@ -81,9 +84,26 @@ docker compose -f docker/docker-compose.yml restart cloud
 - Schema managed with Drizzle migrations in `src/db/migrations/`
 - Generate a new migration after schema changes: `npm run db:generate`
 - Apply pending migrations: `npm run db:migrate` (also runs automatically on server start)
-- Connection: `DATABASE_URL=postgres://user:pass@host:5432/dbname`
+- Connection: `DATABASE_URL=postgres://user:pass@host:5432/dbname`; in Compose, the cloud service uses the internal hostname `postgres` by default.
 
-The persistent volume `baseline-cloud-postgres-data` survives container restarts. To back up: `docker exec baseline-cloud-postgres pg_dump -U baseline baseline_cloud > backup.sql`.
+The persistent volume `baseline-cloud-postgres-data` survives container restarts. To back up, use the configured database variables: `docker exec baseline-cloud-postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql`.
+
+## Coolify deployment
+
+Configure the Compose file path as `docker/docker-compose.yml`, then add these variables in the application's **Environment Variables** section:
+
+| Variable | Value |
+| --- | --- |
+| `POSTGRES_USER` | A new database username |
+| `POSTGRES_PASSWORD` | A new database password |
+| `POSTGRES_DB` | The database name, for example `baseline_cloud` |
+| `DATABASE_URL` | `postgres://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>` |
+| `JWT_SECRET` | A random value generated with `openssl rand -base64 48` |
+| `TOKEN_PEPPER` | A different random value generated with `openssl rand -base64 48` |
+| `BOOTSTRAP_ADMIN` | `true` for the first signup, then `false` |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins, or empty when not needed |
+
+Use URL-encoded credentials in `DATABASE_URL` if the username or password contains characters reserved by URLs. Do not commit the values from Coolify or a local `.env` file.
 
 ## CLI integration
 
