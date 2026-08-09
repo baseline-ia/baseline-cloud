@@ -76,14 +76,16 @@ Build: ✅ `next build` passes — 13 routes, 0 errors
 
 ---
 
-## Phase 3 — REST API routes
+## Phase 3 — REST API routes ✅ COMPLETE
 
-- [ ] `app/api/v1/events/route.ts` — POST batch ingest (validate → insert → return `{ inserted: N }`)
-- [ ] `app/api/v1/auth/login/route.ts` — POST login (return API token)
-- [ ] `app/api/v1/auth/signup/route.ts` — POST signup (admin token required or bootstrap mode)
-- [ ] `app/api/v1/auth/logout/route.ts` — DELETE invalidate token
-- [ ] `app/api/v1/auth/token/route.ts` — POST create long-lived API token
-- [ ] Add `lib/services/auth-api.ts` — token CRUD helpers
+- [x] `app/api/v1/events/route.ts` — POST single event (Bearer auth, Zod validation)
+- [x] `app/api/v1/events/batch/route.ts` — POST batch 1–100 events (db.transaction)
+- [x] `app/api/v1/auth/signup/route.ts` — POST signup (first-user→admin, duplicate guard, issues token)
+- [x] `app/api/v1/auth/login/route.ts` — POST login (audit success/failure, returns active tokens)
+- [x] `app/api/v1/auth/token/route.ts` — POST issue token (Bearer + password re-validation)
+- [x] `app/api/v1/auth/logout/route.ts` — POST logout (revokes presenting token)
+
+Build: ✅ 22 routes, 0 errors
 
 ---
 
@@ -103,18 +105,13 @@ Build: ✅ 16 routes, 0 errors. All admin pages guard `role !== 'admin'`.
 
 ---
 
-## Phase 5 — Docker + Cleanup
+## Phase 5 — Docker + Cleanup ✅ PARTIAL
 
-- [ ] `docker/Dockerfile` — multi-stage Next.js build (standalone output)
-  - Builder: `npm ci && npm run build`
-  - Runtime: `node .next/standalone/server.js`, port 3000
-  - Copy: `.next/standalone/`, `.next/static/`, `public/`
-- [ ] `docker/docker-compose.yml` — update healthcheck path to `/api/health`
-- [ ] Copy `src/db/migrations/` → `lib/db/migrations/` (if not done in Phase 1 merge)
-- [ ] Delete `src/` directory (Fastify code no longer needed)
-- [ ] Delete `src/views/` (Eta templates)
-- [ ] Update `README.md` — remove Fastify references, add Next.js setup instructions
-- [ ] Final Docker build + smoke test
+- [x] `docker/Dockerfile` — multi-stage Next.js standalone build (builder → runtime `node server.js`)
+- [x] `docker/docker-compose.yml` — healthcheck updated to `/api/health`, removed unused Fastify env vars
+- [ ] Delete `src/` directory (Fastify code no longer needed — keep until confirmed working in prod)
+- [ ] Update `README.md` — remove Fastify references, add Next.js setup + Docker instructions
+- [ ] Final Docker build + smoke test in container
 
 ---
 
