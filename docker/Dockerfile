@@ -22,7 +22,7 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tzdata dumb-init
+RUN apk add --no-cache ca-certificates tzdata
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -41,6 +41,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
   CMD wget -q -O- http://localhost:3000/api/health | grep -q '"status":"ok"' || exit 1
 
-# dumb-init ensures proper signal forwarding and zombie reaping
-ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]
