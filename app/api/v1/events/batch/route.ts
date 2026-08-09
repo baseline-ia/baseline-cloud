@@ -31,6 +31,8 @@ const EventSchema = z.object({
     'skill.used',
     'engram.setup',
     'engram.update',
+    'session.tokens',
+    'session.credits',
   ]),
   project: z.string().min(1).max(128).default('default'),
   payload: z.record(z.unknown()).default({}),

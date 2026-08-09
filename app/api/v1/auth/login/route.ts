@@ -37,14 +37,15 @@ export async function POST(req: NextRequest) {
   const user = userRows[0]
 
   if (!user || !user.enabled) {
+    const reason = user ? 'disabled' : 'not_found'
     await writeAudit({
       actorUsername: username,
       action: 'login.failed',
-      metadata: { reason: user ? 'disabled' : 'not_found' },
+      metadata: { reason },
       ip,
     })
     return NextResponse.json(
-      { error_class: 'auth', error_code: 'invalid_credentials' },
+      { error_class: 'auth', error_code: 'invalid_credentials', reason },
       { status: 401 },
     )
   }
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
       ip,
     })
     return NextResponse.json(
-      { error_class: 'auth', error_code: 'invalid_credentials' },
+      { error_class: 'auth', error_code: 'invalid_credentials', reason: 'bad_password' },
       { status: 401 },
     )
   }

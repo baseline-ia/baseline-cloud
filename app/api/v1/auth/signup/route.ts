@@ -10,7 +10,7 @@ import { config } from '@/lib/config'
 
 const SignupSchema = z.object({
   username: z.string().min(3).max(64).regex(/^[a-z0-9_-]+$/i),
-  email: z.string().email().max(254),
+  email: z.string().email().max(254).optional(),
   password: z.string().min(8).max(128),
   tokenName: z.string().min(1).max(64).optional(),
 })
@@ -29,7 +29,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { username, email, password, tokenName } = parsed.data
+  const { username, password, tokenName } = parsed.data
+  const email = parsed.data.email ?? `${username}@cli.local`
 
   // Check if this is the first user
   const countRows = await db.select({ id: users.id }).from(users).limit(1)
