@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN NODE_ENV=development npm ci
 
 COPY . .
 RUN npm run build
