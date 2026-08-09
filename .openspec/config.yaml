@@ -1,0 +1,61 @@
+# openspec/config.yaml — baseline-cloud
+schema: spec-driven
+
+context: |
+  Project: baseline-cloud
+  Stack: Next.js 16 App Router, React 19, TypeScript 5.7, Tailwind CSS 3, shadcn/ui (default style, RSC-enabled)
+  Data: Drizzle ORM 0.33, PostgreSQL (postgres driver), schema at lib/db/schema.ts
+  Auth: Jose JWT + bcryptjs, session logic in lib/auth/index.ts
+  Architecture: App Router route groups; lib/ for services, db, auth, i18n, utils; components/ for UI
+  Testing: Vitest 8 (node env, singleFork, real PostgreSQL); test files in tests/; setup in tests/setup.ts
+  Quality: ESLint 9 + eslint-config-next, TypeScript strict mode; no Prettier config detected
+  Style: shadcn/ui components.json (baseColor: slate, cssVariables: true); Tailwind config at tailwind.config.ts
+
+strict_tdd: true
+
+testing:
+  runner: vitest
+  test_command: "npx vitest run"
+  watch_command: "npx vitest"
+  coverage_command: "npx vitest run --coverage"
+  coverage_provider: v8
+  layers:
+    unit: false
+    integration: true   # real PostgreSQL via tests/setup.ts
+    e2e: false
+  quality:
+    linter: "npm run lint"
+    type_checker: "npx tsc --noEmit"
+    formatter: null
+
+rules:
+  proposal:
+    - Include rollback plan for schema migrations and auth changes
+    - Note impact on existing nextjs-migration change if relevant
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+    - Reference lib/db/schema.ts table names in data requirements
+  design:
+    - Include sequence diagrams for auth flows and API routes
+    - Document Drizzle schema changes with migration strategy
+    - Show App Router file placement (app/ route, lib/ service, components/ UI)
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Prefix DB tasks with migration notes when schema changes
+  apply:
+    guidelines:
+      - Follow App Router conventions (Server Components by default, Client Components opt-in)
+      - Place business logic in lib/services/, not in route handlers
+      - Use Drizzle schema types for type safety; avoid raw SQL
+      - Add shadcn components via CLI: npx shadcn@latest add <component>
+    tdd: true
+    test_command: "npx vitest run"
+  verify:
+    test_command: "npx vitest run"
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive delta specs
+    - Update CHANGES.md index after archiving
