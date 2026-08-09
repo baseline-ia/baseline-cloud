@@ -38,7 +38,4 @@ COPY --from=builder --chown=baseline:baseline /app/public ./public
 USER baseline
 EXPOSE 3007
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
-  CMD wget -q -O- http://localhost:3007/api/health | grep -q '"status":"ok"' || exit 1
-
 CMD ["node", "server.js"]
