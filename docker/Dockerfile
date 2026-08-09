@@ -25,7 +25,7 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates tzdata
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3007
 ENV HOSTNAME=0.0.0.0
 
 RUN addgroup -g 10001 baseline && adduser -D -G baseline -u 10001 baseline
@@ -36,9 +36,9 @@ COPY --from=builder --chown=baseline:baseline /app/.next/static ./.next/static
 COPY --from=builder --chown=baseline:baseline /app/public ./public
 
 USER baseline
-EXPOSE 3000
+EXPOSE 3007
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
-  CMD wget -q -O- http://localhost:3000/api/health | grep -q '"status":"ok"' || exit 1
+  CMD wget -q -O- http://localhost:3007/api/health | grep -q '"status":"ok"' || exit 1
 
 CMD ["node", "server.js"]
