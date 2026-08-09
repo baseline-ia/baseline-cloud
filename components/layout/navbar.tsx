@@ -1,4 +1,16 @@
 import Link from 'next/link';
+import {
+  LayoutDashboard,
+  GitMerge,
+  Zap,
+  Radio,
+  Users,
+  Activity,
+  KeyRound,
+  UserCog,
+  Settings,
+  LogOut,
+} from 'lucide-react';
 import type { DashboardSession } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 
@@ -7,6 +19,18 @@ interface NavbarProps {
   locale: string;
   currentPath: string;
 }
+
+const NAV_ICONS: Record<string, React.ReactElement> = {
+  overview: <LayoutDashboard size={15} />,
+  changes: <GitMerge size={15} />,
+  skills: <Zap size={15} />,
+  events: <Radio size={15} />,
+  developers: <Users size={15} />,
+  activity: <Activity size={15} />,
+  'admin-tokens': <KeyRound size={15} />,
+  'admin-users': <UserCog size={15} />,
+  'admin-settings': <Settings size={15} />,
+};
 
 const NAV_LINKS = [
   { href: '/dashboard', label: 'nav.overview', key: 'overview' },
@@ -78,7 +102,10 @@ export function Navbar({ user, locale, currentPath }: NavbarProps) {
             href={link.href}
             className={isActive(link.href, currentPath) ? 'active' : ''}
           >
-            {navLabel(locale, link.label)}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              {NAV_ICONS[link.key]}
+              {navLabel(locale, link.label)}
+            </span>
           </Link>
         ))}
         {user.role === 'admin' &&
@@ -88,7 +115,10 @@ export function Navbar({ user, locale, currentPath }: NavbarProps) {
               href={link.href}
               className={isActive(link.href, currentPath) ? 'active' : ''}
             >
-              {navLabel(locale, link.label)}
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                {NAV_ICONS[link.key]}
+                {navLabel(locale, link.label)}
+              </span>
             </Link>
           ))}
       </div>
@@ -115,7 +145,10 @@ export function Navbar({ user, locale, currentPath }: NavbarProps) {
         <ThemeToggle />
         <form method="post" action="/api/auth/logout">
           <button type="submit" className="btn-logout">
-            {navLabel(locale, 'nav.logout')}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              <LogOut size={14} />
+              {navLabel(locale, 'nav.logout')}
+            </span>
           </button>
         </form>
       </div>

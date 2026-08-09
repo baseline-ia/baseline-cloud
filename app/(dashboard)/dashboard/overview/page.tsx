@@ -1,4 +1,4 @@
-import { Clock, TrendingUp, Users, Activity } from 'lucide-react';
+import { Clock, TrendingUp, Users, Activity, LayoutDashboard } from 'lucide-react';
 import {
   getRoiSummary,
   getOverviewStats,
@@ -64,7 +64,10 @@ export default async function OverviewPage() {
 
       {/* Page header */}
       <div className="page-header">
-        <h1>Overview</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <LayoutDashboard size={22} />
+          Overview
+        </h1>
         <p className="subtitle">Last 30 days</p>
       </div>
 

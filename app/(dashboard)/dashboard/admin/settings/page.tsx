@@ -1,3 +1,4 @@
+import { Settings } from 'lucide-react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
@@ -14,7 +15,10 @@ export default async function SettingsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>Settings</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Settings size={22} />
+          Settings
+        </h1>
         <p className="subtitle">Workspace-level configuration.</p>
       </div>
 

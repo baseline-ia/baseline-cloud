@@ -1,3 +1,4 @@
+import { Zap } from 'lucide-react';
 import { getSkillAdoption } from '@/lib/services/metrics';
 import {
   Table,
@@ -23,7 +24,10 @@ export default async function SkillsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>Skills</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Zap size={22} />
+          Skills
+        </h1>
         <p className="subtitle">Baseline skill adoption across your team</p>
       </div>
 

@@ -1,3 +1,4 @@
+import { GitMerge } from 'lucide-react';
 import { listChanges, type ChangeRecord } from '@/lib/services/metrics';
 import {
   Table,
@@ -114,7 +115,10 @@ export default async function ChangesPage() {
     <div>
       {/* Page header */}
       <div className="page-header">
-        <h1>Changes &amp; ROI</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <GitMerge size={22} />
+          Changes &amp; ROI
+        </h1>
         <p className="subtitle">Track time saved across all development changes</p>
       </div>
 

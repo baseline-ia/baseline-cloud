@@ -1,3 +1,4 @@
+import { Radio } from 'lucide-react';
 import { getRecentEvents } from '@/lib/services/metrics';
 import {
   Table,
@@ -73,7 +74,10 @@ export default async function EventsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>Events</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Radio size={22} />
+          Events
+        </h1>
         <p className="subtitle">Raw event log — last 200 events</p>
       </div>
 

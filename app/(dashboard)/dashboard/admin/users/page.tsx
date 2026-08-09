@@ -1,3 +1,4 @@
+import { UserCog } from 'lucide-react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
@@ -76,7 +77,10 @@ export default async function UsersPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>Users</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <UserCog size={22} />
+          Users
+        </h1>
         <p className="subtitle">Manage dashboard and CLI access for your team.</p>
       </div>
 

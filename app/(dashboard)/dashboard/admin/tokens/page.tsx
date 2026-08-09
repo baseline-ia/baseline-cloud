@@ -1,3 +1,4 @@
+import { KeyRound } from 'lucide-react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
@@ -47,7 +48,10 @@ export default async function TokensPage({
   return (
     <div>
       <div className="page-header">
-        <h1>API Tokens</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <KeyRound size={22} />
+          API Tokens
+        </h1>
         <p className="subtitle">Manage bearer tokens for CLI authentication.</p>
       </div>
 

@@ -1,3 +1,4 @@
+import { Activity } from 'lucide-react';
 import { getRecentEvents } from '@/lib/services/metrics';
 
 function formatDateTime(date: Date): string {
@@ -69,7 +70,10 @@ export default async function ActivityPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>Activity</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Activity size={22} />
+          Activity
+        </h1>
         <p className="subtitle">Recent events from all developers</p>
       </div>
 

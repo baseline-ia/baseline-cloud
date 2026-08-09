@@ -1,3 +1,4 @@
+import { Users } from 'lucide-react';
 import { getDeveloperStats } from '@/lib/services/metrics';
 import {
   Table,
@@ -65,7 +66,10 @@ export default async function DevelopersPage() {
   return (
     <div>
       <div className="page-header">
-        <h1>Developers</h1>
+        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Users size={22} />
+          Developers
+        </h1>
         <p className="subtitle">Activity and stats for the last 30 days</p>
       </div>
 
