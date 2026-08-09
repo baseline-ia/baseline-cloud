@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
-    npm ci --ignore-scripts
+    npm install --ignore-scripts
 
 # ── Stage 2: builder ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
