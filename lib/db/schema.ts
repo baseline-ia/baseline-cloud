@@ -151,3 +151,23 @@ export const settings = pgTable('settings', {
 
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
+
+// ============================================================================
+// Projects (enrollment allowlist)
+// ============================================================================
+
+export const projects = pgTable(
+  'projects',
+  {
+    slug: text('slug').primaryKey(),
+    name: text('name').notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    disabledAt: timestamp('disabled_at', { withTimezone: true }),
+    disabledByUserId: text('disabled_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  },
+);
+
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;

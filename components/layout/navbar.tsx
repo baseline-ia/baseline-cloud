@@ -9,6 +9,7 @@ import {
   KeyRound,
   UserCog,
   Settings,
+  FolderKanban,
   LogOut,
 } from 'lucide-react';
 import type { DashboardSession } from '@/lib/auth';
@@ -30,6 +31,7 @@ const NAV_ICONS: Record<string, React.ReactElement> = {
   'admin-tokens': <KeyRound size={15} />,
   'admin-users': <UserCog size={15} />,
   'admin-settings': <Settings size={15} />,
+  'admin-projects': <FolderKanban size={15} />,
 };
 
 const NAV_LINKS = [
@@ -45,6 +47,7 @@ const ADMIN_NAV_LINKS = [
   { href: '/dashboard/admin/tokens', label: 'nav.tokens', key: 'admin-tokens' },
   { href: '/dashboard/admin/users', label: 'nav.users', key: 'admin-users' },
   { href: '/dashboard/admin/settings', label: 'nav.settings', key: 'admin-settings' },
+  { href: '/dashboard/admin/projects', label: 'nav.projects', key: 'admin-projects' },
 ];
 
 const NAV_LABELS: Record<string, Record<string, string>> = {
@@ -58,6 +61,7 @@ const NAV_LABELS: Record<string, Record<string, string>> = {
     'nav.tokens': 'Tokens',
     'nav.users': 'Users',
     'nav.settings': 'Settings',
+    'nav.projects': 'Projects',
     'nav.logout': 'Logout',
   },
   es: {
@@ -70,6 +74,7 @@ const NAV_LABELS: Record<string, Record<string, string>> = {
     'nav.tokens': 'Tokens',
     'nav.users': 'Usuarios',
     'nav.settings': 'Configuración',
+    'nav.projects': 'Proyectos',
     'nav.logout': 'Cerrar sesión',
   },
 };

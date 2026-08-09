@@ -7,6 +7,7 @@ import { events } from '@/lib/db/schema'
 import { resolveBearerToken } from '@/lib/auth'
 import { extractIp } from '@/lib/ip'
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
+import { normalizeSlug, isProjectEnrolled } from '@/lib/services/projects'
 
 function extractBearer(req: Request): string | null {
   const auth = req.headers.get('authorization') ?? ''
@@ -75,6 +76,15 @@ export async function POST(req: NextRequest) {
   }
 
   const { event_type, project, payload, occurred_at } = parsed.data
+  const slug = normalizeSlug(project)
+  const enrolled = await isProjectEnrolled(slug)
+  if (!enrolled) {
+    return NextResponse.json(
+      { error_class: 'forbidden', error_code: 'project_not_enrolled', project: slug },
+      { status: 403 },
+    )
+  }
+
   const id = nanoid(21)
   const occurredAt = occurred_at ? new Date(occurred_at) : new Date()
 
@@ -82,7 +92,7 @@ export async function POST(req: NextRequest) {
     id,
     userId: resolved.userId,
     username: resolved.username,
-    project,
+    project: slug,
     eventType: event_type,
     payload,
     occurredAt,
