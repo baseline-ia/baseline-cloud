@@ -1,6 +1,13 @@
 import * as React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
+const kpiCardStyle = `
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+`;
+
 interface KpiCardProps {
   label: string;
   value: string | number;
@@ -29,7 +36,10 @@ export function KpiCard({ label, value, sublabel, icon, trend, accent = 'primary
   const accentSoft = accentSoftMap[accent];
 
   return (
-    <div
+    <>
+      <style>{kpiCardStyle}</style>
+      <div
+      className="kpi-card"
       style={{
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border-color)',
@@ -38,15 +48,7 @@ export function KpiCard({ label, value, sublabel, icon, trend, accent = 'primary
         boxShadow: 'var(--shadow-sm)',
         position: 'relative',
         overflow: 'hidden',
-        transition: 'all 0.2s ease',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-2px)';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.transform = '';
-        (e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-sm)';
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
       }}
     >
       {/* Accent top bar */}
@@ -136,6 +138,7 @@ export function KpiCard({ label, value, sublabel, icon, trend, accent = 'primary
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
