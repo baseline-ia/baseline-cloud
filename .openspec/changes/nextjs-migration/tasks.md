@@ -44,11 +44,12 @@ status: in_progress
 - [x] `components/ui/separator.tsx` — shadcn Separator
 - [x] `components/ui/dropdown-menu.tsx` — shadcn DropdownMenu
 
-**Merge step (pending):**
-- [ ] Commit Phase 1 files in worktree branch `worktree-agent-a467615e3ff8150ed`
-- [ ] Merge worktree branch into main
-- [ ] Copy DB migrations: `src/db/migrations/` → `lib/db/migrations/`
-- [ ] Run `npm install && npm run build` to verify compilation
+**Merge step:**
+- [x] Commit Phase 1 files in worktree branch `worktree-agent-a467615e3ff8150ed`
+- [x] Merge worktree branch into main (commit `bee81e1`)
+- [x] Fix tsconfig — explicit `include` list to exclude `src/` from Next.js type checking
+- [x] `npm install && npm run build` passes ✅
+- [x] Copy DB migrations: `src/db/migrations/` → `lib/db/migrations/`
 - [ ] Run `npm run dev` and verify `/login` and `/api/health` work
 
 ---
