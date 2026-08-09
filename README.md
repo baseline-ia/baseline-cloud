@@ -14,6 +14,7 @@ Self-hosted telemetry dashboard for the [`baseline`](https://github.com/amsinteg
 - 💰 **Per-change ROI**: estimate time at planning time (`--estimate small|medium|large|xlarge|240|4h`); cloud computes actual time (open→close) and shows time saved vs. estimate.
 - 👥 **Admin panel** for user management, token issuance/revocation, and time-baseline configuration.
 - 🔒 **Audit log** for signups, logins, token issuance/revocation, settings changes.
+- 🗂️ **Project enrollment**: admins control which projects are allowed to send telemetry. Non-enrolled projects receive `403 project_not_enrolled`.
 - 🐳 **Single-command deploy** with `docker compose up -d` (Postgres + cloud service, healthchecks, persistent volume).
 
 ## Quick start (development)
@@ -90,19 +91,59 @@ docker exec baseline-cloud-postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" >
 
 ## Coolify deployment
 
-Set the Compose file path to `docker/docker-compose.yml`, then add these variables in **Environment Variables**:
+baseline-cloud ships a multi-stage Dockerfile at `docker/Dockerfile`. The recommended Coolify setup uses the **Dockerfile** build pack with the app's database as a separate Coolify resource.
+
+### 1. Create a PostgreSQL resource in Coolify
+
+Add a **PostgreSQL** database resource in your Coolify project. Note the internal connection string — you'll use it as `DATABASE_URL`.
+
+### 2. Create the application
+
+In your Coolify project, create a new **Application** from the GitHub repository and set:
+
+| Field | Value |
+| --- | --- |
+| **Build Pack** | Dockerfile |
+| **Base Directory** | `/` |
+| **Dockerfile Location** | `/docker/Dockerfile` |
+| **Port** | `3007` |
+
+### 3. Set environment variables
 
 | Variable | Value |
 | --- | --- |
-| `POSTGRES_USER` | A new database username |
-| `POSTGRES_PASSWORD` | A new database password |
-| `POSTGRES_DB` | The database name, e.g. `baseline_cloud` |
-| `DATABASE_URL` | `postgres://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>` |
-| `JWT_SECRET` | Random value from `openssl rand -base64 48` |
-| `TOKEN_PEPPER` | Different random value from `openssl rand -base64 48` |
-| `BOOTSTRAP_ADMIN` | `true` for the first signup, then `false` |
-| `ALLOWED_ORIGINS` | Comma-separated browser origins, or empty |
-| `COOKIE_SECURE` | `false` when serving over plain HTTP; omit or set `true` when behind HTTPS |
+| `DATABASE_URL` | Internal connection string from the Coolify PostgreSQL resource |
+| `JWT_SECRET` | Random value: `openssl rand -base64 48` |
+| `TOKEN_PEPPER` | Different random value: `openssl rand -base64 48` |
+| `BOOTSTRAP_ADMIN` | `true` for the first deploy (first signup), then `false` |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins (e.g. `https://baseline.yourcompany.com`), or empty |
+| `COOKIE_SECURE` | `true` when behind HTTPS (default); `false` for plain HTTP |
+| `RATE_LIMIT_ENABLED` | `true` (default); set `false` to disable rate limiting |
+
+### 4. Run database migrations
+
+After the first deploy, run the migration from your local machine pointing at the production database:
+
+```bash
+DATABASE_URL="your-production-database-url" npm run db:migrate
+```
+
+> Re-run `db:migrate` after every deploy that includes schema changes.
+
+### 5. Create the first admin
+
+```bash
+curl -X POST https://your-coolify-domain/api/v1/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","email":"admin@yourcompany.com","password":"your-strong-password"}'
+# Save the returned token.raw — the CLI uses it to authenticate.
+```
+
+Then set `BOOTSTRAP_ADMIN=false` and redeploy.
+
+### 6. Enroll your projects
+
+Before the CLI can send events, an admin must enroll each project at **Dashboard → Admin → Projects**. Non-enrolled projects receive `403 project_not_enrolled`.
 
 ## CLI integration
 
@@ -195,6 +236,7 @@ The admin configures per-type baselines in **Dashboard → Admin → Settings** 
 | `GET` | `/dashboard/admin/tokens` | Token management (admin) |
 | `GET` | `/dashboard/admin/users` | User management (admin) |
 | `GET` | `/dashboard/admin/settings` | Time baselines (admin) |
+| `GET` | `/dashboard/admin/projects` | Project enrollment (admin) |
 
 ## Architecture
 
@@ -229,5 +271,7 @@ npm run db:seed      # Seed demo data (dev only)
 ```
 
 ## Project status
+
+**0.3.0** — Project enrollment allowlist, improved Dockerfile (3-stage build), Coolify Dockerfile deployment.
 
 **0.2.0** — Migrated from Fastify + Eta to Next.js 16 App Router + React 19 + shadcn/ui. Postgres-only.
