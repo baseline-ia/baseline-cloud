@@ -5,6 +5,8 @@ import { nanoid } from 'nanoid'
 import { db } from '@/lib/db/client'
 import { events } from '@/lib/db/schema'
 import { resolveBearerToken } from '@/lib/auth'
+import { extractIp } from '@/lib/ip'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 function extractBearer(req: Request): string | null {
   const auth = req.headers.get('authorization') ?? ''
@@ -56,6 +58,9 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  const rl = checkRateLimit(`events:single:${resolved.userId}`, { limit: 300, windowMs: 60_000 })
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   const body = await req.json()
   const parsed = EventSchema.safeParse(body)
   if (!parsed.success) {
@@ -81,7 +86,7 @@ export async function POST(req: NextRequest) {
     eventType: event_type,
     payload,
     occurredAt,
-    clientIp: req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? null,
+    clientIp: extractIp(req),
     userAgent: req.headers.get('user-agent') ?? null,
   })
 

@@ -45,6 +45,8 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       # Set to false when serving over plain HTTP (no TLS termination)
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # Set to false to disable rate limiting (true = enabled, false = disabled)
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:3000/api/health | grep -q '\"status\":\"ok\"'"]
       interval: 30s

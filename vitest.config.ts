@@ -1,23 +1,18 @@
 import { defineConfig } from 'vitest/config';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+    },
+  },
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./tests/setup.ts'],
     testTimeout: 30_000,
     hookTimeout: 30_000,
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        // Run tests serially: they share a postgres DB
-        singleFork: true,
-      },
-    },
-    sequence: {
-      // Run setup/teardown hooks around the whole file for DB lifecycle
-      hooks: 'all',
-    },
+    include: ['lib/__tests__/**/*.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
@@ -25,9 +20,7 @@ export default defineConfig({
         'node_modules/**',
         'dist/**',
         'coverage/**',
-        'tests/**',
         '**/*.eta',
-        'src/db/migrations/**',
       ],
     },
   },

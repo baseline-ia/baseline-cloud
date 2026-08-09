@@ -31,9 +31,18 @@ const ConfigSchema = z.object({
     .string()
     .default('true')
     .transform((s) => s.toLowerCase() === 'true'),
+
+  RATE_LIMIT_ENABLED: z
+    .string()
+    .optional()
+    .transform((s) => (s == null ? undefined : s.toLowerCase() !== 'false')),
 });
 
-export type AppConfig = z.infer<typeof ConfigSchema>;
+type RawConfig = z.infer<typeof ConfigSchema>;
+
+export type AppConfig = Omit<RawConfig, 'RATE_LIMIT_ENABLED'> & {
+  RATE_LIMIT_ENABLED: boolean;
+};
 
 function loadConfig(): AppConfig {
   const parsed = ConfigSchema.safeParse(process.env);
@@ -44,7 +53,11 @@ function loadConfig(): AppConfig {
     }
     process.exit(1);
   }
-  return parsed.data;
+  const data = parsed.data as AppConfig;
+  if (data.RATE_LIMIT_ENABLED === undefined) {
+    data.RATE_LIMIT_ENABLED = data.NODE_ENV !== 'test';
+  }
+  return data;
 }
 
 export const config = loadConfig();

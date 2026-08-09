@@ -7,6 +7,8 @@ import { db } from '@/lib/db/client'
 import { users } from '@/lib/db/schema'
 import { hashPassword, issueToken, writeAudit } from '@/lib/auth'
 import { config } from '@/lib/config'
+import { extractIp } from '@/lib/ip'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 const SignupSchema = z.object({
   username: z.string().min(3).max(64).regex(/^[a-z0-9_-]+$/i),
@@ -31,6 +33,10 @@ export async function POST(req: NextRequest) {
 
   const { username, password, tokenName } = parsed.data
   const email = parsed.data.email ?? `${username}@cli.local`
+  const ip = extractIp(req)
+
+  const rl = checkRateLimit(`auth:signup:${ip}`, { limit: 5, windowMs: 60 * 60_000 })
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
 
   // Check if this is the first user
   const countRows = await db.select({ id: users.id }).from(users).limit(1)
@@ -60,7 +66,6 @@ export async function POST(req: NextRequest) {
   const role = isFirstUser ? 'admin' : 'member'
   const passwordHash = await hashPassword(password)
   const userId = nanoid(21)
-  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? undefined
 
   await db.insert(users).values({
     id: userId,

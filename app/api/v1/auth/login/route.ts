@@ -5,6 +5,8 @@ import { eq, isNull, and } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { users, tokens } from '@/lib/db/schema'
 import { verifyPassword, writeAudit } from '@/lib/auth'
+import { extractIp } from '@/lib/ip'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 const LoginSchema = z.object({
   username: z.string().min(1),
@@ -26,7 +28,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { username, password } = parsed.data
-  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? undefined
+  const ip = extractIp(req)
+
+  const rl = checkRateLimit(`auth:login:${ip}`, { limit: 10, windowMs: 15 * 60_000 })
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
 
   const userRows = await db
     .select()

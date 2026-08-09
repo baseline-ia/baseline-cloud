@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { users } from '@/lib/db/schema'
 import { resolveBearerToken, verifyPassword, issueToken } from '@/lib/auth'
+import { extractIp } from '@/lib/ip'
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 function extractBearer(req: Request): string | null {
   const auth = req.headers.get('authorization') ?? ''
@@ -18,6 +20,10 @@ const TokenSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const ip = extractIp(req)
+  const rl = checkRateLimit(`auth:token:${ip}`, { limit: 10, windowMs: 15 * 60_000 })
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
+
   const raw = extractBearer(req)
   if (!raw) {
     return NextResponse.json(
@@ -71,8 +77,6 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     )
   }
-
-  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? undefined
 
   const issued = await issueToken({
     userId: resolved.userId,
