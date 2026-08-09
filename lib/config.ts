@@ -15,6 +15,11 @@ const ConfigSchema = z.object({
     .min(32, 'TOKEN_PEPPER must be at least 32 characters')
     .default('change-me-in-production-this-is-only-for-dev-min-32-chars'),
 
+  COOKIE_SECURE: z
+    .string()
+    .default('true')
+    .transform((s) => s.toLowerCase() !== 'false'),
+
   ALLOWED_ORIGINS: z.string().default('').transform((s) =>
     s
       .split(',')

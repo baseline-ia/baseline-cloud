@@ -7,6 +7,7 @@ import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyPassword, createSession } from '@/lib/auth';
+import { config } from '@/lib/config';
 
 const LoginSchema = z.object({
   username: z.string().min(1),
@@ -51,7 +52,7 @@ export async function loginAction(
     path: '/',
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: config.COOKIE_SECURE,
     maxAge: 8 * 60 * 60, // 8h
   });
 
