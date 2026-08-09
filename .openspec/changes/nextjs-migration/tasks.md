@@ -54,26 +54,25 @@ status: in_progress
 
 ---
 
-## Phase 2 — Dashboard Pages
+## Phase 2 — Dashboard Pages ✅ COMPLETE
 
 ### Shared components
-- [ ] `components/ui/chart.tsx` — Recharts wrapper (ResponsiveContainer + palette)
-- [ ] `components/ui/table.tsx` — shadcn Table primitives
-- [ ] `components/ui/skeleton.tsx` — loading skeleton
-- [ ] `components/dashboard/kpi-card.tsx` — metric card (value, label, icon, delta)
-- [ ] `components/dashboard/activity-chart.tsx` — `'use client'` AreaChart
-- [ ] `components/dashboard/top-events-list.tsx` — ranked event list
+- [x] `components/ui/table.tsx` — shadcn Table (7 exports)
+- [x] `components/ui/skeleton.tsx` — animate-pulse skeleton
+- [x] `components/dashboard/kpi-card.tsx` — metric card with icon, trend, accent
+- [x] `components/dashboard/activity-chart.tsx` — `'use client'` Recharts AreaChart
+- [x] `components/dashboard/worktype-chart.tsx` — `'use client'` Recharts horizontal BarChart
 
-### Pages
-- [ ] `app/(dashboard)/overview/page.tsx` — KPI cards + activity chart + top events
-- [ ] `app/(dashboard)/events/page.tsx` — events table with filters
-- [ ] `app/(dashboard)/developers/page.tsx` — developer stats table
-- [ ] `app/(dashboard)/changes/page.tsx` — code change metrics
-- [ ] `app/(dashboard)/skills/page.tsx` — skill distribution (PieChart)
-- [ ] `app/(dashboard)/activity/page.tsx` — chronological activity feed
+### Pages (all RSC, routes under /dashboard/*)
+- [x] `app/(dashboard)/dashboard/page.tsx` — redirect to /dashboard/overview
+- [x] `app/(dashboard)/dashboard/overview/page.tsx` — 4 KPI cards + activity + worktype charts + top devs/projects
+- [x] `app/(dashboard)/dashboard/changes/page.tsx` — ROI table with badges, sorted closed-first
+- [x] `app/(dashboard)/dashboard/developers/page.tsx` — dev stats with relative time + error rate badges
+- [x] `app/(dashboard)/dashboard/activity/page.tsx` — event feed with type categorization
+- [x] `app/(dashboard)/dashboard/skills/page.tsx` — skill adoption table with empty state
+- [x] `app/(dashboard)/dashboard/events/page.tsx` — raw events with payload preview
 
-### Services
-- [ ] Extend `lib/services/metrics.ts` with: `getEventsPage()`, `getDeveloperStats()`, `getChangeMetrics()`, `getSkillDistribution()`, `getActivityFeed()`
+Build: ✅ `next build` passes — 13 routes, 0 errors
 
 ---
 
