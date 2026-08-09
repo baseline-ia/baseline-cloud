@@ -1,7 +1,0 @@
-<div class="page-header">
-  <h1><%= it.t('page.activity.title') %></h1>
-  <p class="subtitle"><%= it.t('page.activity.subtitle') %></p>
-</div>
-<div hx-get="/v1/dashboard/activity" hx-trigger="every 5s" hx-swap="innerHTML">
-  <%~ include('../partials/activity-feed', { recent: it.recent }) %>
-</div>
