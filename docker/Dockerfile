@@ -1,25 +1,33 @@
-# Multi-stage build for baseline-cloud (Next.js 16 standalone)
-# Stage 1: build
+# syntax=docker/dockerfile:1.7
+# Multi-stage build for baseline-cloud (Next.js standalone output)
+
+# ── Stage 1: dependencies ──────────────────────────────────────────────────────
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --ignore-scripts
+
+# ── Stage 2: builder ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm install --ignore-scripts
-
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
 RUN npm run build
 
-# Stage 2: runtime — slim image with standalone output
+# ── Stage 3: runtime ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS runtime
 WORKDIR /app
 
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata dumb-init
 
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Non-root user
 RUN addgroup -g 10001 baseline && adduser -D -G baseline -u 10001 baseline
 
 # Next.js standalone bundle
@@ -30,9 +38,9 @@ COPY --from=builder --chown=baseline:baseline /app/public ./public
 USER baseline
 EXPOSE 3000
 
-# DATABASE_URL must be set at runtime. No default — fail fast.
-
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
   CMD wget -q -O- http://localhost:3000/api/health | grep -q '"status":"ok"' || exit 1
 
+# dumb-init ensures proper signal forwarding and zombie reaping
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "server.js"]
