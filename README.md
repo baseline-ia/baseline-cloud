@@ -45,105 +45,198 @@ curl -X POST http://localhost:3000/api/v1/auth/signup \
 # Save token.raw — it's how the CLI authenticates.
 ```
 
-## Quick start (full Docker deployment)
+## Deployment
+
+baseline-cloud ships two deployment paths. Pick whichever fits your infrastructure.
+
+| | Docker Compose | Dockerfile |
+|---|---|---|
+| **Best for** | VPS, bare metal, self-hosted | PaaS: Coolify, Railway, Render, AWS App Runner |
+| **Database** | Bundled (Postgres container) | External managed database |
+| **Effort** | One command | Configure build + env vars in UI |
+
+---
+
+### Option A — Docker Compose (VPS / self-hosted)
+
+Everything runs in a single `docker compose up`: the app and a Postgres container with a persistent volume.
+
+**Prerequisites**: Docker 24+ and Docker Compose V2 on your server.
+
+#### 1. Clone and configure
 
 ```bash
-# 1. Generate secrets
-export POSTGRES_USER=your_postgres_user
-export POSTGRES_PASSWORD=$(openssl rand -hex 32)
-export POSTGRES_DB=baseline_cloud
-export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
-export JWT_SECRET=$(openssl rand -base64 48)
-export TOKEN_PEPPER=$(openssl rand -base64 48)
+git clone https://github.com/your-org/baseline-cloud.git
+cd baseline-cloud
+cp .env.example .env
+```
 
-# 2. (optional) First signup mode
-export BOOTSTRAP_ADMIN=true
+Edit `.env` with your values:
 
-# 3. Deploy postgres + cloud in one shot
+```bash
+POSTGRES_USER=baseline
+POSTGRES_PASSWORD=$(openssl rand -hex 32)   # run this and paste the output
+POSTGRES_DB=baseline_cloud
+DATABASE_URL=postgres://baseline:<POSTGRES_PASSWORD>@postgres:5432/baseline_cloud
+
+JWT_SECRET=<output of: openssl rand -base64 48>
+TOKEN_PEPPER=<output of: openssl rand -base64 48>  # must differ from JWT_SECRET
+
+BOOTSTRAP_ADMIN=true
+ALLOWED_ORIGINS=https://your-domain.com
+COOKIE_SECURE=true
+```
+
+#### 2. Start
+
+```bash
 docker compose -f docker/docker-compose.yml up -d
+```
 
-# 4. Wait for cloud healthcheck to pass (~30s)
+Postgres starts first and the app waits for it to be healthy. Check status:
+
+```bash
 docker compose -f docker/docker-compose.yml ps
+```
 
-# 5. Sign up the first admin
+#### 3. Run migrations
+
+```bash
+docker compose -f docker/docker-compose.yml exec cloud \
+  npx tsx lib/db/migrate.ts
+```
+
+#### 4. Create the first admin
+
+```bash
 curl -X POST http://localhost:3007/api/v1/auth/signup \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin","email":"admin@yourcompany.com","password":"correct-horse-battery-staple"}'
-
-# 6. After the first admin exists, disable bootstrap mode
-export BOOTSTRAP_ADMIN=false
-docker compose -f docker/docker-compose.yml restart cloud
-```
-
-## Database
-
-- **Postgres 16+** (via the `postgres:16-alpine` Docker image)
-- Schema managed with Drizzle migrations in `lib/db/migrations/`
-- Generate a new migration after schema changes: `npm run db:generate`
-- Apply pending migrations: `npm run db:migrate` (also runs on server start in production)
-- Connection: `DATABASE_URL=postgres://user:pass@host:5432/dbname`; in Compose, use the internal service name `postgres`.
-
-The persistent volume `baseline-cloud-postgres-data` survives container restarts. To back up:
-
-```bash
-docker exec baseline-cloud-postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql
-```
-
-## Coolify deployment
-
-baseline-cloud ships a multi-stage Dockerfile at `docker/Dockerfile`. The recommended Coolify setup uses the **Dockerfile** build pack with the app's database as a separate Coolify resource.
-
-### 1. Create a PostgreSQL resource in Coolify
-
-Add a **PostgreSQL** database resource in your Coolify project. Note the internal connection string — you'll use it as `DATABASE_URL`.
-
-### 2. Create the application
-
-In your Coolify project, create a new **Application** from the GitHub repository and set:
-
-| Field | Value |
-| --- | --- |
-| **Build Pack** | Dockerfile |
-| **Base Directory** | `/` |
-| **Dockerfile Location** | `/docker/Dockerfile` |
-| **Port** | `3007` |
-
-### 3. Set environment variables
-
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | Internal connection string from the Coolify PostgreSQL resource |
-| `JWT_SECRET` | Random value: `openssl rand -base64 48` |
-| `TOKEN_PEPPER` | Different random value: `openssl rand -base64 48` |
-| `BOOTSTRAP_ADMIN` | `true` for the first deploy (first signup), then `false` |
-| `ALLOWED_ORIGINS` | Comma-separated browser origins (e.g. `https://baseline.yourcompany.com`), or empty |
-| `COOKIE_SECURE` | `true` when behind HTTPS (default); `false` for plain HTTP |
-| `RATE_LIMIT_ENABLED` | `true` (default); set `false` to disable rate limiting |
-
-### 4. Run database migrations
-
-After the first deploy, run the migration from your local machine pointing at the production database:
-
-```bash
-DATABASE_URL="your-production-database-url" npm run db:migrate
-```
-
-> Re-run `db:migrate` after every deploy that includes schema changes.
-
-### 5. Create the first admin
-
-```bash
-curl -X POST https://your-coolify-domain/api/v1/auth/signup \
   -H 'Content-Type: application/json' \
   -d '{"username":"admin","email":"admin@yourcompany.com","password":"your-strong-password"}'
 # Save the returned token.raw — the CLI uses it to authenticate.
 ```
 
+#### 5. Disable bootstrap mode
+
+Edit `.env` → set `BOOTSTRAP_ADMIN=false`, then:
+
+```bash
+docker compose -f docker/docker-compose.yml restart cloud
+```
+
+#### Backups
+
+```bash
+docker exec baseline-cloud-postgres \
+  pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql
+```
+
+---
+
+### Option B — Dockerfile (PaaS platforms)
+
+The app is built from `docker/Dockerfile` (multi-stage, Node 20 Alpine). You provide an external PostgreSQL database and set environment variables in your platform's UI.
+
+**Supported platforms**: Coolify, Railway, Render, AWS App Runner, CapRover, Dokku, and any platform that can build and run a Dockerfile.
+
+#### Environment variables
+
+Set these in your platform's environment configuration:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | `postgres://user:pass@host:5432/dbname` |
+| `JWT_SECRET` | `openssl rand -base64 48` |
+| `TOKEN_PEPPER` | `openssl rand -base64 48` (different from JWT_SECRET) |
+| `BOOTSTRAP_ADMIN` | `true` for first deploy, then `false` |
+| `ALLOWED_ORIGINS` | Comma-separated browser origins, or leave empty |
+| `COOKIE_SECURE` | `true` behind HTTPS (default); `false` for plain HTTP |
+| `RATE_LIMIT_ENABLED` | `true` (default) |
+
+#### Platform-specific settings
+
+<details>
+<summary><strong>Coolify</strong></summary>
+
+1. Create a **PostgreSQL** database resource. Copy its internal connection string as `DATABASE_URL`.
+2. Create a new **Application** from the GitHub repo:
+
+| Field | Value |
+| --- | --- |
+| Build Pack | `Dockerfile` |
+| Base Directory | `/` |
+| Dockerfile Location | `/docker/Dockerfile` |
+| Port | `3007` |
+
+3. Add the environment variables above and deploy.
+
+</details>
+
+<details>
+<summary><strong>Railway</strong></summary>
+
+1. New project → **Deploy from GitHub repo**.
+2. Railway auto-detects the Dockerfile.
+3. Add a **PostgreSQL** plugin — Railway injects `DATABASE_URL` automatically.
+4. Add the remaining environment variables in the **Variables** tab.
+5. Set the port to `3007` under **Settings → Networking**.
+
+</details>
+
+<details>
+<summary><strong>Render</strong></summary>
+
+1. New **Web Service** → connect the GitHub repo.
+2. Render auto-detects the Dockerfile. Set **Port** to `3007`.
+3. Create a **PostgreSQL** database and copy the external connection string as `DATABASE_URL`.
+4. Add the remaining environment variables under **Environment**.
+
+</details>
+
+<details>
+<summary><strong>AWS App Runner</strong></summary>
+
+1. Push the image to ECR:
+   ```bash
+   docker build -f docker/Dockerfile -t baseline-cloud .
+   docker tag baseline-cloud:latest <account>.dkr.ecr.<region>.amazonaws.com/baseline-cloud:latest
+   docker push <account>.dkr.ecr.<region>.amazonaws.com/baseline-cloud:latest
+   ```
+2. Create an **App Runner** service from the ECR image. Set port `3007`.
+3. Create an **RDS PostgreSQL** instance. Use the connection string as `DATABASE_URL`.
+4. Add the environment variables under **Configuration → Environment variables**.
+
+</details>
+
+#### After deploying (all platforms)
+
+**Run migrations** against the production database:
+
+```bash
+DATABASE_URL="your-production-database-url" npm run db:migrate
+```
+
+> Re-run after every deploy that includes schema changes (`lib/db/migrations/` was modified).
+
+**Create the first admin:**
+
+```bash
+curl -X POST https://your-domain/api/v1/auth/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","email":"admin@yourcompany.com","password":"your-strong-password"}'
+# Save token.raw — the CLI uses it to authenticate.
+```
+
 Then set `BOOTSTRAP_ADMIN=false` and redeploy.
 
-### 6. Enroll your projects
+---
 
-Before the CLI can send events, an admin must enroll each project at **Dashboard → Admin → Projects**. Non-enrolled projects receive `403 project_not_enrolled`.
+### After any deployment — enroll your projects
+
+Before the CLI can send events, an admin must enroll each project:
+
+**Dashboard → Admin → Projects → Add project**
+
+Non-enrolled projects receive `403 project_not_enrolled`. The CLI should handle this silently (treat it as a no-op).
 
 ## CLI integration
 
