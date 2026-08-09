@@ -8,3 +8,15 @@ coverage
 data/
 drizzle/
 .npm-cache/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Tools
+.claude/
+.codegraph/
+.atl/
+.commandcode/
