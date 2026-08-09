@@ -69,6 +69,7 @@ export default async function ActivityPage() {
 
   return (
     <div>
+      <style>{`.activity-row:hover { background: var(--bg-subtle); }`}</style>
       <div className="page-header">
         <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Activity size={22} />
@@ -102,6 +103,7 @@ export default async function ActivityPage() {
               return (
                 <div
                   key={evt.id}
+                  className="activity-row"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -109,12 +111,6 @@ export default async function ActivityPage() {
                     padding: '0.75rem 1.25rem',
                     borderBottom: '1px solid var(--border-color)',
                     transition: 'background 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-subtle)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.background = '';
                   }}
                 >
                   {/* Event type badge */}
