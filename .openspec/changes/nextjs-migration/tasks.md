@@ -87,24 +87,19 @@ Build: ✅ `next build` passes — 13 routes, 0 errors
 
 ---
 
-## Phase 4 — Admin Pages
+## Phase 4 — Admin Pages ✅ COMPLETE
 
-### Shared components
-- [ ] `components/ui/dialog.tsx` — shadcn Dialog (for confirm modals)
-- [ ] `components/ui/form.tsx` + `components/ui/textarea.tsx`
+- [x] `app/(dashboard)/dashboard/admin/tokens/page.tsx` — tokens table + one-time raw token display
+- [x] `app/(dashboard)/dashboard/admin/tokens/actions.ts` — `createTokenAction`, `revokeTokenAction`
+- [x] `app/(dashboard)/dashboard/admin/tokens/create-token-form.tsx` — `'use client'` form
+- [x] `app/(dashboard)/dashboard/admin/users/page.tsx` — users table with avatar circles
+- [x] `app/(dashboard)/dashboard/admin/users/actions.ts` — `createUserAction` with Zod validation
+- [x] `app/(dashboard)/dashboard/admin/users/create-user-form.tsx` — `'use client'` 4-field grid form
+- [x] `app/(dashboard)/dashboard/admin/settings/page.tsx` — time baselines form
+- [x] `app/(dashboard)/dashboard/admin/settings/actions.ts` — `updateBaselinesAction`
+- [x] `app/(dashboard)/dashboard/admin/settings/settings-form.tsx` — `'use client'` 2-col grid
 
-### Users page
-- [ ] `app/(dashboard)/admin/users/page.tsx` — users table (avatar, email, role badge, status, dates)
-- [ ] `app/(dashboard)/admin/users/actions.ts` — `createUser(formData)` Server Action
-- [ ] `components/admin/create-user-form.tsx` — collapsible form (shadcn Accordion or details)
-
-### Tokens page
-- [ ] `app/(dashboard)/admin/tokens/page.tsx` — tokens table (name, prefix, expiry, last used)
-- [ ] `app/(dashboard)/admin/tokens/actions.ts` — `createToken()`, `revokeToken()` Server Actions
-
-### Settings page
-- [ ] `app/(dashboard)/admin/settings/page.tsx` — settings form (app name, allowed origins)
-- [ ] `app/(dashboard)/admin/settings/actions.ts` — `updateSettings()` Server Action
+Build: ✅ 16 routes, 0 errors. All admin pages guard `role !== 'admin'`.
 
 ---
 
