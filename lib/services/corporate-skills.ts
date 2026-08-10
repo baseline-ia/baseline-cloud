@@ -401,3 +401,66 @@ export async function unassignSkill(
     metadata: { projectSlug, skillId },
   })
 }
+
+// ============================================================================
+// updateCorporateSkillMetadata
+// ============================================================================
+
+export async function updateCorporateSkillMetadata(
+  id: string,
+  input: {
+    name?: string
+    description?: string | null
+    tool?: string | null
+    failClosed?: boolean
+  },
+  byUserId: string,
+): Promise<CorporateSkill> {
+  const rows = await db
+    .update(corporateSkills)
+    .set({
+      name: input.name,
+      description: input.description,
+      tool: input.tool,
+      failClosed: input.failClosed,
+      updatedAt: new Date(),
+    })
+    .where(eq(corporateSkills.id, id))
+    .returning()
+
+  if (rows.length === 0) throw new SkillNotFoundError(id)
+
+  await writeAudit({
+    actorUserId: byUserId,
+    action: 'corporate_skill.updated',
+    metadata: { skillId: id, changes: Object.keys(input) },
+  })
+
+  return rows[0]
+}
+
+// ============================================================================
+// getSkillAssignments
+// ============================================================================
+
+export interface SkillProjectAssignmentRow {
+  projectSlug: string
+  versionId: string | null
+  failClosed: boolean
+  assignedAt: Date
+}
+
+export async function getSkillAssignments(skillId: string): Promise<SkillProjectAssignmentRow[]> {
+  const rows = await db
+    .select({
+      projectSlug: projectSkillAssignments.projectSlug,
+      versionId: projectSkillAssignments.versionId,
+      failClosed: projectSkillAssignments.failClosed,
+      assignedAt: projectSkillAssignments.assignedAt,
+    })
+    .from(projectSkillAssignments)
+    .where(eq(projectSkillAssignments.skillId, skillId))
+    .orderBy(projectSkillAssignments.assignedAt)
+
+  return rows
+}

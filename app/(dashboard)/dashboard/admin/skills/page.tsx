@@ -1,4 +1,5 @@
 import { Zap } from 'lucide-react'
+import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
@@ -15,10 +16,31 @@ export default async function SkillsPage() {
   return (
     <div>
       <div className="page-header">
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Zap size={22} />
-          Skills
-        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+            <Zap size={22} />
+            Skills
+          </h1>
+          <Link
+            href="/dashboard/admin/skills/new"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.375rem',
+              height: '36px',
+              padding: '0 1.25rem',
+              background: 'var(--cl-primary)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 'var(--cl-radius-sm)',
+              fontWeight: 600,
+              fontSize: '0.9375rem',
+              textDecoration: 'none',
+            }}
+          >
+            + New Skill
+          </Link>
+        </div>
         <p className="subtitle">Manage the corporate skill catalog and project assignments.</p>
       </div>
 

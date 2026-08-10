@@ -3,31 +3,13 @@
  * Spec: corporate-skills-server
  *
  * Tests verify:
- * - Create skill form renders fields and wires to createSkillAction
- * - Publish version panel submits publishVersionAction with skillId
- * - Skills table renders skill rows
+ * - Skills table renders skill rows with slug, name, and version
+ * - "Manage" link points to the skill detail page
+ * - Empty state message when no skills
  */
 
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-
-// Mock server actions
-vi.mock('./actions', () => ({
-  createSkillAction: vi.fn(),
-  publishVersionAction: vi.fn(),
-  assignToProjectAction: vi.fn(),
-  unassignAction: vi.fn(),
-}))
-
-// Mock useActionState — React 19 API
-vi.mock('react', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('react')>()
-  return {
-    ...actual,
-    useActionState: vi.fn((_action: unknown, initialState: unknown) => [initialState, vi.fn(), false]),
-  }
-})
 
 import { SkillsForm } from './skills-form'
 import type { CorporateSkill } from '@/lib/db/schema'
@@ -61,20 +43,6 @@ describe('SkillsForm', () => {
     vi.clearAllMocks()
   })
 
-  describe('Create skill form', () => {
-    it('renders the create skill form with required fields', () => {
-      render(<SkillsForm initialSkills={[]} />)
-
-      expect(screen.getByLabelText(/slug/i)).toBeInTheDocument()
-      expect(screen.getByLabelText(/name/i)).toBeInTheDocument()
-    })
-
-    it('renders the "Create Skill" submit button', () => {
-      render(<SkillsForm initialSkills={[]} />)
-      expect(screen.getByRole('button', { name: /create skill/i })).toBeInTheDocument()
-    })
-  })
-
   describe('Skills table', () => {
     it('renders skill rows with slug and name', () => {
       const skills = [makeSkill()]
@@ -100,21 +68,14 @@ describe('SkillsForm', () => {
       render(<SkillsForm initialSkills={skills} />)
       expect(screen.getByText(/no versions/i)).toBeInTheDocument()
     })
-  })
 
-  describe('Publish version panel', () => {
-    it('renders publish panel with skillId hidden input', async () => {
-      const skills = [makeSkill({ id: 'skill-id-1' })]
+    it('renders a Manage link pointing to the skill detail page', () => {
+      const skills = [makeSkill({ slug: 'sdd-apply' })]
       render(<SkillsForm initialSkills={skills} />)
 
-      // Open the publish details panel
-      const publishSummary = screen.getByText(/publish version/i)
-      await userEvent.click(publishSummary)
-
-      const hiddenInput = document.querySelector<HTMLInputElement>(
-        'input[type="hidden"][name="skillId"][value="skill-id-1"]',
-      )
-      expect(hiddenInput).toBeInTheDocument()
+      const link = screen.getByRole('link', { name: /manage/i })
+      expect(link).toBeInTheDocument()
+      expect(link).toHaveAttribute('href', '/dashboard/admin/skills/sdd-apply')
     })
   })
 })
