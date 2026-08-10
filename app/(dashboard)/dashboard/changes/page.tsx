@@ -165,7 +165,6 @@ export default async function ChangesPage() {
           <TableHeader>
             <TableRow style={{ borderBottom: '1px solid var(--border-color)' }}>
               <TableHead>Name</TableHead>
-              <TableHead>Developer</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Status</TableHead>
               <TableHead style={{ textAlign: 'right' }}>Duration</TableHead>
@@ -177,7 +176,7 @@ export default async function ChangesPage() {
             {changes.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={6}
                   style={{
                     textAlign: 'center',
                     padding: '3rem',
@@ -216,28 +215,6 @@ export default async function ChangesPage() {
                         {c.title}
                       </p>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div
-                      style={{
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, var(--cl-primary), #8b5cf6)',
-                        color: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 600,
-                        fontSize: '0.6875rem',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {c.username.charAt(0).toUpperCase()}
-                    </div>
-                    <span style={{ fontSize: '0.9375rem', color: 'var(--text)' }}>{c.username}</span>
                   </div>
                 </TableCell>
                 <TableCell>{workTypeBadge(c.workType)}</TableCell>

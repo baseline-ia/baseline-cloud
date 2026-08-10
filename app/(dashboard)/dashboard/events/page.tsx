@@ -94,7 +94,6 @@ export default async function EventsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
-              <TableHead>Developer</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Payload</TableHead>
@@ -104,7 +103,7 @@ export default async function EventsPage() {
             {evts.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={4}
                   style={{
                     textAlign: 'center',
                     padding: '3rem',
@@ -120,16 +119,6 @@ export default async function EventsPage() {
               <TableRow key={evt.id}>
                 <TableCell style={{ paddingTop: '0.625rem', paddingBottom: '0.625rem' }}>
                   {eventTypeBadge(evt.eventType)}
-                </TableCell>
-                <TableCell
-                  style={{
-                    fontSize: '0.9375rem',
-                    color: 'var(--text)',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {evt.username}
                 </TableCell>
                 <TableCell
                   style={{

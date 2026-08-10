@@ -54,7 +54,7 @@ export default async function OverviewPage() {
         }
         .overview-bottom-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1fr;
           gap: 1.5rem;
         }
         @media (max-width: 900px) {
@@ -154,124 +154,6 @@ export default async function OverviewPage() {
 
       {/* Bottom row */}
       <div className="overview-bottom-grid">
-        {/* Top Developers */}
-        <div
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--cl-radius)',
-            padding: '1.25rem 1.5rem',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <p
-            style={{
-              margin: '0 0 1rem',
-              fontWeight: 600,
-              fontSize: '1.0625rem',
-              color: 'var(--text)',
-            }}
-          >
-            Top Developers
-          </p>
-          {roi.byDeveloper.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>No data yet.</p>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  {['#', 'Developer', 'Changes', 'Time Saved'].map((h) => (
-                    <th
-                      key={h}
-                      style={{
-                        textAlign: h === '#' || h === 'Changes' || h === 'Time Saved' ? 'center' : 'left',
-                        padding: '0 0.75rem 0.625rem',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: 'var(--text-muted)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {roi.byDeveloper.slice(0, 8).map((dev, i) => (
-                  <tr key={dev.username}>
-                    <td
-                      style={{
-                        padding: '0.625rem 0.75rem',
-                        textAlign: 'center',
-                        fontSize: '0.8125rem',
-                        color: 'var(--text-faint)',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      {i + 1}
-                    </td>
-                    <td
-                      style={{
-                        padding: '0.625rem 0.75rem',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                        <div
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, var(--cl-primary), #8b5cf6)',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {dev.username.charAt(0).toUpperCase()}
-                        </div>
-                        <span style={{ fontWeight: 500, fontSize: '0.9375rem', color: 'var(--text)' }}>
-                          {dev.username}
-                        </span>
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        padding: '0.625rem 0.75rem',
-                        textAlign: 'center',
-                        fontSize: '0.9375rem',
-                        color: 'var(--text)',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      {dev.changes}
-                    </td>
-                    <td
-                      style={{
-                        padding: '0.625rem 0.75rem',
-                        textAlign: 'center',
-                        fontWeight: 600,
-                        fontSize: '0.9375rem',
-                        color: 'var(--success)',
-                        borderBottom: '1px solid var(--border-color)',
-                      }}
-                    >
-                      {Math.round(dev.savedMin / 60)}h
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
         {/* Top Projects */}
         <div
           style={{

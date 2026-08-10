@@ -116,19 +116,6 @@ export default async function ActivityPage() {
                   {/* Event type badge */}
                   <div style={{ flexShrink: 0 }}>{eventCategoryBadge(evt.eventType)}</div>
 
-                  {/* Username */}
-                  <code
-                    style={{
-                      fontFamily: 'var(--font-jetbrains-mono), monospace',
-                      fontSize: '0.8125rem',
-                      color: 'var(--text)',
-                      fontWeight: 600,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {evt.username}
-                  </code>
-
                   {/* Project */}
                   {evt.project && (
                     <span

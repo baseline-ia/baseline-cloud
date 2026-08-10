@@ -1,4 +1,7 @@
 import { Users } from 'lucide-react';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { resolveSession } from '@/lib/auth';
 import { getDeveloperStats } from '@/lib/services/metrics';
 import {
   Table,
@@ -61,6 +64,10 @@ function errorRateBadge(rate: number) {
 }
 
 export default async function DevelopersPage() {
+  const cookieStore = await cookies();
+  const session = await resolveSession(cookieStore.get('baseline_dashboard_session')?.value);
+  if (!session || session.role !== 'admin') redirect('/dashboard');
+
   const devs = await getDeveloperStats();
 
   return (

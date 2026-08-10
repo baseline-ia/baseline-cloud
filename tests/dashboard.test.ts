@@ -178,7 +178,8 @@ describe('GET /dashboard/events (browser)', () => {
 });
 
 describe('GET /dashboard/developers', () => {
-  it('lists developers with their activity', async () => {
+  // alice = first signup = admin role
+  it('lists developers with their activity (admin)', async () => {
     const app = await makeApp();
     const { token, cookie } = await signupAndGetToken(app, 'alice');
     await postEvent(app, token, 'cli.install', { os: 'darwin' });
@@ -188,6 +189,39 @@ describe('GET /dashboard/developers', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('Developers');
     expect(res.body).toContain('alice');
+  });
+
+  it('redirects non-admin to /dashboard', async () => {
+    const app = await makeApp();
+    // alice signs up first → becomes admin
+    await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { username: 'alice', email: 'alice@example.com', password: 'correct-horse-battery' },
+    });
+    // bob signs up second → non-admin (member)
+    await app.inject({
+      method: 'POST',
+      url: '/v1/auth/signup',
+      payload: { username: 'bob', email: 'bob@example.com', password: 'correct-horse-battery' },
+    });
+    const login = await app.inject({
+      method: 'POST',
+      url: '/dashboard/login',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'username=bob&password=correct-horse-battery',
+    });
+    const setCookie = login.headers['set-cookie'];
+    const cookieStr = Array.isArray(setCookie) ? setCookie[0] : setCookie!;
+    const bobCookie = cookieStr?.split(';')[0] ?? '';
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/dashboard/developers',
+      headers: { cookie: bobCookie },
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe('/dashboard');
   });
 });
 
