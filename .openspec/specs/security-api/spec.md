@@ -145,3 +145,45 @@ The single-instance assumption MUST be documented in the module header.
 - GIVEN the store contains entries for keys that have not received traffic since their window expired
 - WHEN the periodic pruning sweep runs
 - THEN those stale entries are removed from the store
+
+---
+
+### Requirement: Skills List Endpoint Authentication
+
+The system MUST protect `GET /api/v1/skills` using the same Bearer token validation and enrollment guard as the existing events endpoint. Requests without a valid token MUST return 401. Requests with a valid token but an unenrolled project MUST return 403. These guards MUST execute before any data access.
+
+#### Scenario: Valid token, enrolled project — allowed
+
+- GIVEN a valid Bearer token and an enrolled project slug in the query string
+- WHEN `GET /api/v1/skills?project=<slug>` is called
+- THEN the guard passes and skill data is returned
+
+#### Scenario: Missing token — 401
+
+- GIVEN no Authorization header
+- WHEN `GET /api/v1/skills?project=<slug>` is called
+- THEN the response is HTTP 401
+
+#### Scenario: Valid token, unenrolled project — 403
+
+- GIVEN a valid Bearer token and a project slug not in the enrollment table
+- WHEN `GET /api/v1/skills?project=<slug>` is called
+- THEN the response is HTTP 403
+
+---
+
+### Requirement: Skills Verify Endpoint Authentication
+
+The system MUST protect `GET /api/v1/skills/:slug/verify` using the same Bearer token validation and enrollment guard as the skills list endpoint. Auth rules are identical.
+
+#### Scenario: Valid token, enrolled project — allowed
+
+- GIVEN a valid Bearer token and an enrolled project slug in the query string
+- WHEN `GET /api/v1/skills/:slug/verify?project=<slug>` is called
+- THEN the guard passes and verify data is returned
+
+#### Scenario: Missing token — 401
+
+- GIVEN no Authorization header
+- WHEN `GET /api/v1/skills/:slug/verify?project=<slug>` is called
+- THEN the response is HTTP 401

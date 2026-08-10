@@ -32,6 +32,7 @@ const NAV_ICONS: Record<string, React.ReactElement> = {
   'admin-users': <UserCog size={15} />,
   'admin-settings': <Settings size={15} />,
   'admin-projects': <FolderKanban size={15} />,
+  'admin-skills': <Zap size={15} />,
 };
 
 const NAV_LINKS = [
@@ -48,6 +49,7 @@ const ADMIN_NAV_LINKS = [
   { href: '/dashboard/admin/users', label: 'nav.users', key: 'admin-users' },
   { href: '/dashboard/admin/settings', label: 'nav.settings', key: 'admin-settings' },
   { href: '/dashboard/admin/projects', label: 'nav.projects', key: 'admin-projects' },
+  { href: '/dashboard/admin/skills', label: 'nav.skills-admin', key: 'admin-skills' },
 ];
 
 const NAV_LABELS: Record<string, Record<string, string>> = {
@@ -62,6 +64,7 @@ const NAV_LABELS: Record<string, Record<string, string>> = {
     'nav.users': 'Users',
     'nav.settings': 'Settings',
     'nav.projects': 'Projects',
+    'nav.skills-admin': 'Skills',
     'nav.logout': 'Logout',
   },
   es: {
@@ -75,6 +78,7 @@ const NAV_LABELS: Record<string, Record<string, string>> = {
     'nav.users': 'Usuarios',
     'nav.settings': 'Configuración',
     'nav.projects': 'Proyectos',
+    'nav.skills-admin': 'Habilidades',
     'nav.logout': 'Cerrar sesión',
   },
 };

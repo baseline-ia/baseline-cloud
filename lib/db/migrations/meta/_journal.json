@@ -15,6 +15,13 @@
       "when": 1786264579683,
       "tag": "0001_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786339832929,
+      "tag": "0002_sharp_jigsaw",
+      "breakpoints": true
     }
   ]
 }

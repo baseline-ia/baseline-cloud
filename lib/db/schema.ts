@@ -1,5 +1,6 @@
 import { pgTable, text, integer, boolean, timestamp, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 
 // ============================================================================
 // Users
@@ -171,3 +172,68 @@ export const projects = pgTable(
 
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
+
+// ============================================================================
+// Corporate Skills (admin-managed versioned skill catalog)
+// ============================================================================
+
+export const corporateSkills = pgTable('corporate_skills', {
+  id: text('id').primaryKey().$defaultFn(() => nanoid(21)),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  description: text('description'),
+  tool: text('tool'),
+  failClosed: boolean('fail_closed').notNull().default(false),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type CorporateSkill = typeof corporateSkills.$inferSelect;
+export type NewCorporateSkill = typeof corporateSkills.$inferInsert;
+
+// ============================================================================
+// Corporate Skill Versions (immutable content snapshots)
+// ============================================================================
+
+export const corporateSkillVersions = pgTable(
+  'corporate_skill_versions',
+  {
+    id: text('id').primaryKey().$defaultFn(() => nanoid(21)),
+    skillId: text('skill_id').notNull().references(() => corporateSkills.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    content: text('content').notNull(),
+    contentHash: text('content_hash').notNull(),
+    publishedByUserId: text('published_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    publishedAt: timestamp('published_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqSkillVersion: uniqueIndex('uq_skill_version').on(t.skillId, t.version),
+  }),
+);
+
+export type CorporateSkillVersion = typeof corporateSkillVersions.$inferSelect;
+export type NewCorporateSkillVersion = typeof corporateSkillVersions.$inferInsert;
+
+// ============================================================================
+// Project Skill Assignments (project ↔ skill with optional version pin)
+// ============================================================================
+
+export const projectSkillAssignments = pgTable(
+  'project_skill_assignments',
+  {
+    id: text('id').primaryKey().$defaultFn(() => nanoid(21)),
+    projectSlug: text('project_slug').notNull().references(() => projects.slug, { onDelete: 'cascade' }),
+    skillId: text('skill_id').notNull().references(() => corporateSkills.id, { onDelete: 'cascade' }),
+    versionId: text('version_id').references(() => corporateSkillVersions.id, { onDelete: 'set null' }),
+    failClosed: boolean('fail_closed').notNull().default(false),
+    assignedByUserId: text('assigned_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqProjectSkill: uniqueIndex('uq_project_skill').on(t.projectSlug, t.skillId),
+  }),
+);
+
+export type ProjectSkillAssignment = typeof projectSkillAssignments.$inferSelect;
+export type NewProjectSkillAssignment = typeof projectSkillAssignments.$inferInsert;
