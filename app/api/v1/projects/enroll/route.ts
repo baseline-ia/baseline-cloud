@@ -9,6 +9,7 @@ import {
   normalizeSlug,
   ProjectAlreadyEnrolledError,
 } from '@/lib/services/projects'
+import { getAssignmentsForProject } from '@/lib/services/corporate-skills'
 
 function extractBearer(req: Request): string | null {
   const auth = req.headers.get('authorization') ?? ''
@@ -24,6 +25,11 @@ const EnrollSchema = z.object({
     .regex(/^[a-z0-9._-]+$/i, 'Slug may only contain letters, digits, dots, underscores, and hyphens.'),
   name: z.string().trim().min(1).max(200),
 })
+
+async function assignedSkills(slug: string): Promise<string[]> {
+  const assignments = await getAssignmentsForProject(slug)
+  return assignments.map((assignment) => assignment.slug)
+}
 
 export async function POST(req: NextRequest) {
   const raw = extractBearer(req)
@@ -85,13 +91,13 @@ export async function POST(req: NextRequest) {
   }
   try {
     const project = await enrollProject(slug, parsed.data.name, resolved.userId)
-    return NextResponse.json({ ok: true, created: true, project }, { status: 201 })
+    return NextResponse.json({ ok: true, created: true, project, assigned_skills: await assignedSkills(slug) }, { status: 201 })
   } catch (error) {
     if (!(error instanceof ProjectAlreadyEnrolledError)) throw error
 
     const existing = await getProject(slug)
     if (existing?.createdByUserId === resolved.userId && existing.name === parsed.data.name) {
-      return NextResponse.json({ ok: true, created: false, project: existing }, { status: 200 })
+      return NextResponse.json({ ok: true, created: false, project: existing, assigned_skills: await assignedSkills(slug) }, { status: 200 })
     }
 
     return NextResponse.json(

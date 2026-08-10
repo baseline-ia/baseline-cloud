@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   resolveBearerToken: vi.fn(),
   enrollProject: vi.fn(),
   getProject: vi.fn(),
+  getAssignmentsForProject: vi.fn(),
   checkRateLimit: vi.fn(),
   rateLimitResponse: vi.fn(),
 }))
@@ -14,6 +15,9 @@ vi.mock('@/lib/services/projects', () => ({
   getProject: mocks.getProject,
   normalizeSlug: (slug: string) => slug.trim().toLowerCase(),
   ProjectAlreadyEnrolledError: class ProjectAlreadyEnrolledError extends Error {},
+}))
+vi.mock('@/lib/services/corporate-skills', () => ({
+  getAssignmentsForProject: mocks.getAssignmentsForProject,
 }))
 vi.mock('@/lib/rate-limit', () => ({
   checkRateLimit: mocks.checkRateLimit,
@@ -37,6 +41,7 @@ describe('POST /api/v1/projects/enroll', () => {
     vi.clearAllMocks()
     mocks.resolveBearerToken.mockResolvedValue(user)
     mocks.checkRateLimit.mockReturnValue({ allowed: true, retryAfterMs: 0 })
+    mocks.getAssignmentsForProject.mockResolvedValue([])
   })
 
   it('requires a bearer token', async () => {
@@ -73,7 +78,7 @@ describe('POST /api/v1/projects/enroll', () => {
     const response = await POST(request({ slug: 'My-Project', name: 'My Project' }) as never)
 
     expect(response.status).toBe(201)
-    expect(await response.json()).toMatchObject({ ok: true, created: true, project })
+    expect(await response.json()).toMatchObject({ ok: true, created: true, project, assigned_skills: [] })
     expect(mocks.enrollProject).toHaveBeenCalledWith('my-project', 'My Project', 'user-1')
   })
 
@@ -101,6 +106,28 @@ describe('POST /api/v1/projects/enroll', () => {
     const response = await POST(request({ slug: 'my-project', name: 'My Project' }) as never)
 
     expect(response.status).toBe(200)
-    expect(await response.json()).toMatchObject({ ok: true, created: false, project })
+    expect(await response.json()).toMatchObject({ ok: true, created: false, project, assigned_skills: [] })
+  })
+
+  it('returns assigned skill slugs for a newly enrolled project', async () => {
+    mocks.enrollProject.mockResolvedValue({ slug: 'my-project', name: 'My Project', enabled: true })
+    mocks.getAssignmentsForProject.mockResolvedValue([{ slug: 'review' }, { slug: 'security' }])
+
+    const response = await POST(request({ slug: 'my-project', name: 'My Project' }) as never)
+
+    expect(response.status).toBe(201)
+    expect((await response.json()).assigned_skills).toEqual(['review', 'security'])
+  })
+
+  it('returns assigned skill slugs for an idempotent enrollment retry', async () => {
+    const { ProjectAlreadyEnrolledError } = await import('@/lib/services/projects')
+    mocks.enrollProject.mockRejectedValue(new ProjectAlreadyEnrolledError('my-project'))
+    mocks.getProject.mockResolvedValue({ slug: 'my-project', name: 'My Project', enabled: true, createdByUserId: 'user-1' })
+    mocks.getAssignmentsForProject.mockResolvedValue([{ slug: 'review' }])
+
+    const response = await POST(request({ slug: 'my-project', name: 'My Project' }) as never)
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).assigned_skills).toEqual(['review'])
   })
 })
