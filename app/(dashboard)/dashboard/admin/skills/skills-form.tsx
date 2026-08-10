@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import type { CorporateSkill } from '@/lib/db/schema'
 import {
   createSkillAction,
@@ -246,8 +246,58 @@ function CreateSkillForm() {
 // PublishVersionPanel
 // ============================================================================
 
+function skillTemplate(slug: string, name: string): string {
+  return `---
+name: ${slug}
+description: "Trigger: ... Apply ${name} workflow automatically."
+license: MIT
+metadata:
+  author: ""
+  version: "1.0"
+---
+
+## Activation Contract
+Describe when the AI should activate this skill (triggers, contexts, keywords).
+
+## Hard Rules
+- Rule 1: always do X
+- Rule 2: never do Y
+- Rule 3: use Z pattern
+
+## Decision Gates
+| Situation | Action |
+| --- | --- |
+| Case 1 | Action to take |
+| Case 2 | Action to take |
+
+## Execution Steps
+1. Step 1 — describe what the AI should do first
+2. Step 2 — next action
+3. Step 3 — final action
+
+## Output Contract
+Describe what the AI should return as a result of executing this skill.
+
+## References
+- Link or description of relevant documentation
+`
+}
+
 function PublishVersionPanel({ skill }: { skill: SkillWithLatestVersion }) {
   const [state, action, pending] = useActionState(publishVersionAction, {})
+  const [content, setContent] = useState(() => skillTemplate(skill.slug, skill.name))
+  const [tab, setTab] = useState<'edit' | 'preview'>('edit')
+
+  const tabBtn = (active: boolean): React.CSSProperties => ({
+    padding: '0.25rem 0.75rem',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    border: '1px solid var(--border-color)',
+    borderRadius: 'var(--cl-radius-sm)',
+    cursor: 'pointer',
+    background: active ? 'var(--cl-primary)' : 'var(--bg-subtle)',
+    color: active ? 'white' : 'var(--text-muted)',
+  })
 
   return (
     <details style={{ marginTop: '0.75rem' }}>
@@ -260,26 +310,63 @@ function PublishVersionPanel({ skill }: { skill: SkillWithLatestVersion }) {
           listStyle: 'none',
         }}
       >
-        Publish Version
+        Publish Version {skill.latestVersion != null ? `(next: v${skill.latestVersion + 1})` : '(v1)'}
       </summary>
       <form
         action={action}
-        style={{
-          marginTop: '0.75rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.5rem',
-        }}
+        style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
       >
         <input type="hidden" name="skillId" value={skill.id} />
-        <textarea
-          name="content"
-          placeholder="Paste SKILL.md content here…"
-          required
-          style={textareaStyle}
-        />
+
+        {/* Tab bar */}
+        <div style={{ display: 'flex', gap: '0.375rem' }}>
+          <button type="button" style={tabBtn(tab === 'edit')} onClick={() => setTab('edit')}>
+            Edit
+          </button>
+          <button type="button" style={tabBtn(tab === 'preview')} onClick={() => setTab('preview')}>
+            Preview
+          </button>
+        </div>
+
+        {/* Editor */}
+        {tab === 'edit' && (
+          <textarea
+            name="content"
+            required
+            value={content}
+            onChange={e => setContent(e.target.value)}
+            style={{ ...textareaStyle, minHeight: '420px', fontFamily: 'monospace', fontSize: '0.8125rem', lineHeight: 1.6 }}
+            spellCheck={false}
+          />
+        )}
+
+        {/* Preview */}
+        {tab === 'preview' && (
+          <>
+            {/* hidden textarea so the form still submits the content */}
+            <input type="hidden" name="content" value={content} />
+            <div
+              style={{
+                minHeight: '420px',
+                padding: '1rem',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--cl-radius-sm)',
+                background: 'var(--bg)',
+                fontFamily: 'monospace',
+                fontSize: '0.8125rem',
+                lineHeight: 1.7,
+                whiteSpace: 'pre-wrap',
+                overflowY: 'auto',
+                color: 'var(--text)',
+              }}
+            >
+              {content}
+            </div>
+          </>
+        )}
+
         {state.error && <p style={errorStyle}>{state.error}</p>}
-        {state.success && <p style={successStyle}>Version published.</p>}
+        {state.success && <p style={successStyle}>Version published successfully.</p>}
         <div>
           <button type="submit" disabled={pending} style={btnPrimary(pending)}>
             {pending ? 'Publishing…' : 'Publish'}
