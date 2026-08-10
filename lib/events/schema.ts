@@ -1,0 +1,30 @@
+import { z } from 'zod'
+
+export const EventSchema = z.object({
+  event_type: z.enum([
+    'cli.install',
+    'cli.update',
+    'cli.doctor',
+    'cli.status',
+    'cli.mcp',
+    'cli.onboard',
+    'cli.login',
+    'cli.logout',
+    'openspec.open',
+    'openspec.update',
+    'change.open',
+    'change.close',
+    'change.commit',
+    'skill.installed',
+    'skill.used',
+    'engram.setup',
+    'engram.update',
+    'session.tokens',
+    'session.credits',
+    'sdd.phase.started',
+    'sdd.phase.completed',
+  ]),
+  project: z.string().min(1).max(128).default('default'),
+  payload: z.record(z.unknown()).default({}),
+  occurred_at: z.string().datetime().optional(),
+})

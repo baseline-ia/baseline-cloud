@@ -302,7 +302,7 @@ The admin configures per-type baselines in **Dashboard → Admin → Settings** 
 | Method | Path | Body | Returns |
 | --- | --- | --- | --- |
 | `POST` | `/api/v1/auth/signup` | `{username, email, password}` | `{user, token}` |
-| `POST` | `/api/v1/auth/login` | `{username, password}` | `{user, tokens[]}` |
+| `POST` | `/api/v1/auth/login` | `{username, password}` | `{user, tokens[], token}` |
 | `GET` | `/api/health` | — | `{status, service, env}` |
 
 ### Bearer-token (CLI)

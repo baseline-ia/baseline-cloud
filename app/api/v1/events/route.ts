@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { z } from 'zod'
 import { nanoid } from 'nanoid'
 import { db } from '@/lib/db/client'
 import { events } from '@/lib/db/schema'
@@ -8,39 +7,13 @@ import { resolveBearerToken } from '@/lib/auth'
 import { extractIp } from '@/lib/ip'
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 import { normalizeSlug, isProjectEnrolled } from '@/lib/services/projects'
+import { EventSchema } from '@/lib/events/schema'
 
 function extractBearer(req: Request): string | null {
   const auth = req.headers.get('authorization') ?? ''
   if (!auth.startsWith('Bearer ')) return null
   return auth.slice(7).trim() || null
 }
-
-const EventSchema = z.object({
-  event_type: z.enum([
-    'cli.install',
-    'cli.update',
-    'cli.doctor',
-    'cli.status',
-    'cli.mcp',
-    'cli.onboard',
-    'cli.login',
-    'cli.logout',
-    'openspec.open',
-    'openspec.update',
-    'change.open',
-    'change.close',
-    'change.commit',
-    'skill.installed',
-    'skill.used',
-    'engram.setup',
-    'engram.update',
-    'session.tokens',
-    'session.credits',
-  ]),
-  project: z.string().min(1).max(128).default('default'),
-  payload: z.record(z.unknown()).default({}),
-  occurred_at: z.string().datetime().optional(),
-})
 
 export async function POST(req: NextRequest) {
   const raw = extractBearer(req)

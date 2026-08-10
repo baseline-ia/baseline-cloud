@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { eq, isNull, and } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import { users, tokens } from '@/lib/db/schema'
-import { verifyPassword, writeAudit } from '@/lib/auth'
+import { issueToken, verifyPassword, writeAudit } from '@/lib/auth'
 import { extractIp } from '@/lib/ip'
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
@@ -80,6 +80,13 @@ export async function POST(req: NextRequest) {
     ip,
   })
 
+  const issued = await issueToken({
+    userId: user.id,
+    username: user.username,
+    name: 'CLI',
+    ip,
+  })
+
   const filteredTokens = await db
     .select({
       id: tokens.id,
@@ -95,6 +102,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     user: { id: user.id, username: user.username, email: user.email, role: user.role },
     tokens: filteredTokens,
-    token_issue: 'POST /api/v1/auth/token with { name, password } to issue a new bearer token',
+    token: { id: issued.id, raw: issued.raw, prefix: issued.prefix, name: issued.name },
   })
 }

@@ -10,6 +10,13 @@ import { writeAudit } from '@/lib/auth/index'
 export type { Project, NewProject } from '@/lib/db/schema'
 import type { Project } from '@/lib/db/schema'
 
+export class ProjectAlreadyEnrolledError extends Error {
+  constructor(public readonly slug: string) {
+    super(`Project "${slug}" is already enrolled.`)
+    this.name = 'ProjectAlreadyEnrolledError'
+  }
+}
+
 // ============================================================================
 // Slug validation
 // ============================================================================
@@ -110,6 +117,12 @@ export async function listProjects(): Promise<Project[]> {
   return db.select().from(projects).orderBy(desc(projects.createdAt))
 }
 
+export async function getProject(slug: string): Promise<Project | null> {
+  const normalizedSlug = normalizeSlug(slug)
+  const rows = await db.select().from(projects).where(eq(projects.slug, normalizedSlug)).limit(1)
+  return rows[0] ?? null
+}
+
 // ============================================================================
 // enrollProject
 // ============================================================================
@@ -121,15 +134,21 @@ export async function enrollProject(
 ): Promise<Project> {
   const normalizedSlug = normalizeSlug(slug)
 
-  const inserted = await db
-    .insert(projects)
-    .values({
-      slug: normalizedSlug,
-      name,
-      enabled: true,
-      createdByUserId: byUserId,
-    })
-    .returning()
+  let inserted: Project[]
+  try {
+    inserted = await db
+      .insert(projects)
+      .values({
+        slug: normalizedSlug,
+        name,
+        enabled: true,
+        createdByUserId: byUserId,
+      })
+      .returning()
+  } catch (error) {
+    if (isUniqueViolation(error)) throw new ProjectAlreadyEnrolledError(normalizedSlug)
+    throw error
+  }
 
   const project = inserted[0]
 
@@ -141,6 +160,10 @@ export async function enrollProject(
 
   invalidate(normalizedSlug)
   return project
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
 }
 
 // ============================================================================
