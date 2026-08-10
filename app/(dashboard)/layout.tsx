@@ -1,6 +1,7 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Navbar } from '@/components/layout/navbar';
+import { Sidebar } from '@/components/layout/sidebar';
+import { SidebarToggle } from '@/components/layout/sidebar-toggle';
 import { resolveSession } from '@/lib/auth';
 
 export default async function DashboardLayout({
@@ -25,9 +26,10 @@ export default async function DashboardLayout({
   const currentPath = headersList.get('x-invoke-path') ?? headersList.get('x-pathname') ?? '/dashboard';
 
   return (
-    <div>
-      <Navbar user={session} locale={locale} currentPath={currentPath} />
-      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '1.5rem' }}>
+    <div className="dashboard-shell">
+      <Sidebar session={session} locale={locale} currentPath={currentPath} />
+      <SidebarToggle />
+      <main className="dashboard-main">
         {children}
       </main>
     </div>
