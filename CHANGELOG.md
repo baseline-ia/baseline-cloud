@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-10
+
+### Added
+
+- **Corporate skills management and distribution.** Admins can create versioned SKILL.md files with SHA-256 tamper-evidence, assign them to projects, and serve them to the CLI via a Bearer-authenticated API. Includes an admin UI at `/dashboard/admin/skills` and two new endpoints: `GET /api/v1/skills` and `GET /api/v1/skills/:slug/verify`.
+- **Project enrollment CLI endpoint.** A new `POST /api/v1/projects/enroll` endpoint allows the CLI to enroll projects programmatically. The login response now returns a `token` field to support the CLI auth flow.
+- **Search and pagination on the admin projects list.** The projects admin page now includes a search bar (filters by slug or name) and 50-items-per-page pagination.
+
+### Changed
+
+- **Developer identity removed from public views.** Names and usernames no longer appear in public dashboard pages. The Top Developers leaderboard is replaced by Top Projects. The Developer column is removed from the Changes, Events, and Activity pages. The Developers page is now gated to admin-only access.
+- **EventSchema extracted to a shared module.** `lib/events/schema.ts` now owns the event schema definition, making it reusable across API routes.
+
 ## [0.3.0] - 2026-08-09
 
 ### Added
@@ -43,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CSS hover substituted for RSC-invalid mouse event handlers in `KpiCard`.
 - Excluded `src/` from Next.js type checking to prevent spurious errors.
 
-[Unreleased]: https://github.com/mikecobas/baseline-cloud/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/mikecobas/baseline-cloud/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/mikecobas/baseline-cloud/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/mikecobas/baseline-cloud/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mikecobas/baseline-cloud/releases/tag/v0.2.0
