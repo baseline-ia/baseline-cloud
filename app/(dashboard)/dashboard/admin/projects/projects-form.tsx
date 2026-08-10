@@ -1,13 +1,17 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import type { Project } from '@/lib/db/schema'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   enrollProjectAction,
   disableProjectAction,
   enableProjectAction,
   deleteProjectAction,
 } from './actions'
+
+const PAGE_SIZE = 50
 
 interface ProjectsFormProps {
   projects: Project[]
@@ -334,9 +338,49 @@ function ProjectRow({ project }: { project: Project }) {
 }
 
 export function ProjectsForm({ projects }: ProjectsFormProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
+
+  const q = searchQuery.trim().toLowerCase()
+  const filteredProjects = q
+    ? projects.filter(
+        (p) => p.slug.toLowerCase().includes(q) || p.name.toLowerCase().includes(q),
+      )
+    : projects
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE))
+  const visibleProjects = filteredProjects.slice(
+    currentPage * PAGE_SIZE,
+    (currentPage + 1) * PAGE_SIZE,
+  )
+
+  function onSearchChange(value: string) {
+    setSearchQuery(value)
+    setCurrentPage(0)
+  }
+
   return (
     <div>
       <EnrollForm />
+
+      <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <Input
+          type="text"
+          aria-label="Search projects by slug or name"
+          placeholder="Search by slug or name…"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.875rem',
+            color: 'var(--text-muted)',
+          }}
+        >
+          {filteredProjects.length} of {projects.length} projects
+        </p>
+      </div>
 
       <div
         style={{
@@ -418,7 +462,7 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
             </tr>
           </thead>
           <tbody>
-            {projects.length === 0 && (
+            {filteredProjects.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
@@ -429,16 +473,49 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
                     fontSize: '0.9375rem',
                   }}
                 >
-                  No projects enrolled yet.
+                  No projects found
                 </td>
               </tr>
+            ) : (
+              visibleProjects.map((project) => (
+                <ProjectRow key={project.slug} project={project} />
+              ))
             )}
-            {projects.map((project) => (
-              <ProjectRow key={project.slug} project={project} />
-            ))}
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginTop: '0.75rem',
+            justifyContent: 'center',
+          }}
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            Prev
+          </Button>
+          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+            Page {currentPage + 1} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === totalPages - 1}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
