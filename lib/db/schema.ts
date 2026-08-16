@@ -214,26 +214,3 @@ export const corporateSkillVersions = pgTable(
 
 export type CorporateSkillVersion = typeof corporateSkillVersions.$inferSelect;
 export type NewCorporateSkillVersion = typeof corporateSkillVersions.$inferInsert;
-
-// ============================================================================
-// Project Skill Assignments (project ↔ skill with optional version pin)
-// ============================================================================
-
-export const projectSkillAssignments = pgTable(
-  'project_skill_assignments',
-  {
-    id: text('id').primaryKey().$defaultFn(() => nanoid(21)),
-    projectSlug: text('project_slug').notNull().references(() => projects.slug, { onDelete: 'cascade' }),
-    skillId: text('skill_id').notNull().references(() => corporateSkills.id, { onDelete: 'cascade' }),
-    versionId: text('version_id').references(() => corporateSkillVersions.id, { onDelete: 'set null' }),
-    failClosed: boolean('fail_closed').notNull().default(false),
-    assignedByUserId: text('assigned_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-    assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => ({
-    uqProjectSkill: uniqueIndex('uq_project_skill').on(t.projectSlug, t.skillId),
-  }),
-);
-
-export type ProjectSkillAssignment = typeof projectSkillAssignments.$inferSelect;
-export type NewProjectSkillAssignment = typeof projectSkillAssignments.$inferInsert;

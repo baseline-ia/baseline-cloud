@@ -1,15 +1,13 @@
 import { createHash } from 'node:crypto'
-import { eq, and, desc, max, sql } from 'drizzle-orm'
+import { eq, desc, max, sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import {
   corporateSkills,
   corporateSkillVersions,
-  projectSkillAssignments,
 } from '@/lib/db/schema'
 import type {
   CorporateSkill,
   CorporateSkillVersion,
-  ProjectSkillAssignment,
 } from '@/lib/db/schema'
 import { writeAudit } from '@/lib/auth/index'
 
@@ -17,7 +15,7 @@ import { writeAudit } from '@/lib/auth/index'
 // Exports (re-export types for consumers)
 // ============================================================================
 
-export type { CorporateSkill, CorporateSkillVersion, ProjectSkillAssignment }
+export type { CorporateSkill, CorporateSkillVersion }
 
 // ============================================================================
 // Slug validation
@@ -40,13 +38,6 @@ export class SkillNotFoundError extends Error {
   constructor(public readonly slugOrId: string) {
     super(`Skill "${slugOrId}" not found.`)
     this.name = 'SkillNotFoundError'
-  }
-}
-
-export class SkillNotPublishedError extends Error {
-  constructor(public readonly skillId: string) {
-    super(`Skill "${skillId}" has no published versions.`)
-    this.name = 'SkillNotPublishedError'
   }
 }
 
@@ -287,90 +278,6 @@ export async function getAssignmentsForProject(
 }
 
 // ============================================================================
-// assignSkillToProject
-// ============================================================================
-
-export async function assignSkillToProject(
-  input: {
-    projectSlug: string
-    skillId: string
-    versionId?: string | null
-    failClosed?: boolean
-  },
-  byUserId: string,
-): Promise<ProjectSkillAssignment> {
-  // Guard: skill must have at least one published version
-  const versionRows = await db
-    .select({ id: corporateSkillVersions.id })
-    .from(corporateSkillVersions)
-    .where(eq(corporateSkillVersions.skillId, input.skillId))
-    .limit(1)
-
-  if (versionRows.length === 0) {
-    throw new SkillNotPublishedError(input.skillId)
-  }
-
-  const inserted = await db
-    .insert(projectSkillAssignments)
-    .values({
-      projectSlug: input.projectSlug,
-      skillId: input.skillId,
-      versionId: input.versionId ?? null,
-      failClosed: input.failClosed ?? false,
-      assignedByUserId: byUserId,
-    })
-    .onConflictDoUpdate({
-      target: [projectSkillAssignments.projectSlug, projectSkillAssignments.skillId],
-      set: {
-        versionId: input.versionId ?? null,
-        failClosed: input.failClosed ?? false,
-        assignedByUserId: byUserId,
-        assignedAt: new Date(),
-      },
-    })
-    .returning()
-
-  const assignment = inserted[0]
-
-  await writeAudit({
-    actorUserId: byUserId,
-    action: 'project_skill.assigned',
-    metadata: {
-      projectSlug: input.projectSlug,
-      skillId: input.skillId,
-      versionId: input.versionId ?? null,
-    },
-  })
-
-  return assignment
-}
-
-// ============================================================================
-// unassignSkill
-// ============================================================================
-
-export async function unassignSkill(
-  projectSlug: string,
-  skillId: string,
-  byUserId: string,
-): Promise<void> {
-  await db
-    .delete(projectSkillAssignments)
-    .where(
-      and(
-        eq(projectSkillAssignments.projectSlug, projectSlug),
-        eq(projectSkillAssignments.skillId, skillId),
-      ),
-    )
-
-  await writeAudit({
-    actorUserId: byUserId,
-    action: 'project_skill.unassigned',
-    metadata: { projectSlug, skillId },
-  })
-}
-
-// ============================================================================
 // updateCorporateSkillMetadata
 // ============================================================================
 
@@ -405,30 +312,4 @@ export async function updateCorporateSkillMetadata(
   })
 
   return rows[0]
-}
-
-// ============================================================================
-// getSkillAssignments
-// ============================================================================
-
-export interface SkillProjectAssignmentRow {
-  projectSlug: string
-  versionId: string | null
-  failClosed: boolean
-  assignedAt: Date
-}
-
-export async function getSkillAssignments(skillId: string): Promise<SkillProjectAssignmentRow[]> {
-  const rows = await db
-    .select({
-      projectSlug: projectSkillAssignments.projectSlug,
-      versionId: projectSkillAssignments.versionId,
-      failClosed: projectSkillAssignments.failClosed,
-      assignedAt: projectSkillAssignments.assignedAt,
-    })
-    .from(projectSkillAssignments)
-    .where(eq(projectSkillAssignments.skillId, skillId))
-    .orderBy(projectSkillAssignments.assignedAt)
-
-  return rows
 }

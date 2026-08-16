@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
-import { getCorporateSkill, getSkillAssignments } from '@/lib/services/corporate-skills'
+import { getCorporateSkill } from '@/lib/services/corporate-skills'
 import { SkillDetailView } from './skill-detail'
 
 interface Props {
@@ -18,8 +18,6 @@ export default async function SkillDetailPage({ params }: Props) {
   const { slug } = await params
   const result = await getCorporateSkill(slug)
   if (!result) notFound()
-
-  const assignments = await getSkillAssignments(result.skill.id)
 
   return (
     <div>
@@ -45,7 +43,7 @@ export default async function SkillDetailPage({ params }: Props) {
         </p>
       </div>
 
-      <SkillDetailView skill={result.skill} versions={result.versions} assignments={assignments} />
+      <SkillDetailView skill={result.skill} versions={result.versions} />
     </div>
   )
 }

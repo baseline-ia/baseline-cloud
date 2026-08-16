@@ -22,6 +22,13 @@
       "when": 1786339832929,
       "tag": "0002_sharp_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786921646639,
+      "tag": "0003_black_mauler",
+      "breakpoints": true
     }
   ]
 }

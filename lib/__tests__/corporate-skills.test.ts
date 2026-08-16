@@ -56,12 +56,9 @@ import {
   SKILL_SLUG_RE,
   SkillSlugTakenError,
   SkillNotFoundError,
-  SkillNotPublishedError,
   createCorporateSkill,
   publishSkillVersion,
   getAssignmentsForProject,
-  assignSkillToProject,
-  unassignSkill,
   listCorporateSkills,
   getCorporateSkill,
 } from '@/lib/services/corporate-skills'
@@ -253,24 +250,6 @@ describe('publishSkillVersion', () => {
     expect(result.contentHash).toBe(expectedHash2)
   })
 
-  // 2.8 assignSkillToProject with no published versions throws SkillNotPublishedError
-  it('2.8 assignSkillToProject with no published versions throws SkillNotPublishedError', async () => {
-    // Mock no versions exist for the skill
-    vi.mocked(db.select).mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([]),
-        }),
-      }),
-    } as unknown as ReturnType<typeof db.select>)
-
-    await expect(
-      assignSkillToProject(
-        { projectSlug: 'my-project', skillId: 'skill-id-1', failClosed: false },
-        'user-1',
-      ),
-    ).rejects.toBeInstanceOf(SkillNotPublishedError)
-  })
 })
 
 // ============================================================================
@@ -282,8 +261,7 @@ describe('getAssignmentsForProject', () => {
     vi.clearAllMocks()
   })
 
-  it('2.6 returns failClosed from assignment row directly (not OR-merged with skill default)', async () => {
-    // skill.failClosed = false, assignment.failClosed = true → result = true
+  it('returns every published skill for every project slug', async () => {
     const rows = [
       {
         slug: 'my-skill',
@@ -291,84 +269,29 @@ describe('getAssignmentsForProject', () => {
         version: 1,
         content: '# content',
         contentHash: 'abc123',
-        failClosed: true, // assignment failClosed wins
+        failClosed: true,
         tool: null,
       },
     ]
 
-    // getAssignmentsForProject calls db.select() twice:
-    // 1st: subquery builder (chainable, terminal .as() returns a subquery object)
-    // 2nd: main query .from().leftJoin().leftJoin().where()
-    vi.mocked(db.select)
-      .mockReturnValueOnce(chainable() as unknown as ReturnType<typeof db.select>)
-      .mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            leftJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue(rows),
-            }),
-          }),
-        }),
-      } as unknown as ReturnType<typeof db.select>)
+    vi.mocked(db.select).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockResolvedValue(rows),
+      }),
+    } as unknown as ReturnType<typeof db.select>)
 
-    const result = await getAssignmentsForProject('my-project')
-    expect(result).toHaveLength(1)
-    expect(result[0].failClosed).toBe(true)
-  })
+    const firstProject = await getAssignmentsForProject('first-project')
+    vi.mocked(db.select).mockClear()
+    vi.mocked(db.select).mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockResolvedValue(rows),
+      }),
+    } as unknown as ReturnType<typeof db.select>)
+    const secondProject = await getAssignmentsForProject('second-project')
 
-  // 2.7 null versionId resolves to MAX(version) content via lateral join
-  it('2.7 returns skill data when assignment has null versionId (resolves to latest)', async () => {
-    const rows = [
-      {
-        slug: 'my-skill',
-        name: 'My Skill',
-        version: 3,
-        content: '# latest content',
-        contentHash: createHash('sha256').update('# latest content').digest('hex'),
-        failClosed: false,
-        tool: null,
-      },
-    ]
-
-    vi.mocked(db.select)
-      .mockReturnValueOnce(chainable() as unknown as ReturnType<typeof db.select>)
-      .mockReturnValueOnce({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            leftJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockResolvedValue(rows),
-            }),
-          }),
-        }),
-      } as unknown as ReturnType<typeof db.select>)
-
-    const result = await getAssignmentsForProject('my-project')
-    expect(result).toHaveLength(1)
-    expect(result[0].version).toBe(3)
-    expect(result[0].slug).toBe('my-skill')
-  })
-})
-
-// ============================================================================
-// 2.9 unassignSkill — removes row and writes audit
-// ============================================================================
-
-describe('unassignSkill', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('2.9 removes assignment row and writes audit project_skill.unassigned', async () => {
-    const mockWhere = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(db.delete).mockReturnValue({ where: mockWhere } as unknown as ReturnType<typeof db.delete>)
-    vi.mocked(writeAudit).mockResolvedValue(undefined)
-
-    await unassignSkill('my-project', 'skill-id-1', 'user-1')
-
-    expect(mockWhere).toHaveBeenCalledTimes(1)
-    expect(writeAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'project_skill.unassigned' }),
-    )
+    expect(firstProject).toEqual(secondProject)
+    expect(firstProject).toHaveLength(1)
+    expect(firstProject[0].failClosed).toBe(true)
   })
 })
 

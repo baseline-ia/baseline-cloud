@@ -8,11 +8,8 @@ import { resolveSession } from '@/lib/auth'
 import {
   createCorporateSkill,
   publishSkillVersion,
-  assignSkillToProject,
-  unassignSkill,
   updateCorporateSkillMetadata,
   SkillSlugTakenError,
-  SkillNotPublishedError,
 } from '@/lib/services/corporate-skills'
 
 const SKILLS_PATH = '/dashboard/admin/skills'
@@ -36,18 +33,6 @@ const CreateSkillSchema = z.object({
 const PublishVersionSchema = z.object({
   skillId: z.string().min(1, 'Skill ID is required.'),
   content: z.string().min(1, 'Content is required.'),
-})
-
-const AssignSchema = z.object({
-  projectSlug: z.string().min(1, 'Project slug is required.'),
-  skillId: z.string().min(1, 'Skill ID is required.'),
-  versionId: z.string().optional(),
-  failClosed: z.preprocess((v) => v === 'on' || v === true || v === 'true', z.boolean()).optional(),
-})
-
-const UnassignSchema = z.object({
-  projectSlug: z.string().min(1, 'Project slug is required.'),
-  skillId: z.string().min(1, 'Skill ID is required.'),
 })
 
 const UpdateSkillMetadataSchema = z.object({
@@ -154,73 +139,6 @@ export async function publishVersionAction(
     await publishSkillVersion(parsed.data.skillId, parsed.data.content, session.userId)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to publish version.'
-    return { error: message }
-  }
-
-  revalidatePath(SKILLS_PATH)
-  return { success: true }
-}
-
-export async function assignToProjectAction(
-  _prevState: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
-  const session = await requireAdmin()
-
-  const raw = {
-    projectSlug: (formData.get('projectSlug') as string | null)?.trim() ?? '',
-    skillId: (formData.get('skillId') as string | null)?.trim() ?? '',
-    versionId: (formData.get('versionId') as string | null)?.trim() ?? '',
-    failClosed: formData.get('failClosed'),
-  }
-
-  const parsed = AssignSchema.safeParse(raw)
-  if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message ?? 'Invalid input.' }
-  }
-
-  try {
-    await assignSkillToProject(
-      {
-        projectSlug: parsed.data.projectSlug,
-        skillId: parsed.data.skillId,
-        versionId: parsed.data.versionId || null,
-        failClosed: parsed.data.failClosed ?? false,
-      },
-      session.userId,
-    )
-  } catch (err) {
-    if (err instanceof SkillNotPublishedError) {
-      return { error: 'Skill has no published versions yet.' }
-    }
-    const message = err instanceof Error ? err.message : 'Failed to assign skill.'
-    return { error: message }
-  }
-
-  revalidatePath(SKILLS_PATH)
-  return { success: true }
-}
-
-export async function unassignAction(
-  _prevState: ActionResult,
-  formData: FormData,
-): Promise<ActionResult> {
-  const session = await requireAdmin()
-
-  const raw = {
-    projectSlug: (formData.get('projectSlug') as string | null)?.trim() ?? '',
-    skillId: (formData.get('skillId') as string | null)?.trim() ?? '',
-  }
-
-  const parsed = UnassignSchema.safeParse(raw)
-  if (!parsed.success) {
-    return { error: parsed.error.errors[0]?.message ?? 'Invalid input.' }
-  }
-
-  try {
-    await unassignSkill(parsed.data.projectSlug, parsed.data.skillId, session.userId)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to unassign skill.'
     return { error: message }
   }
 

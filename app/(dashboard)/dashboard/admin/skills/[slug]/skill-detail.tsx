@@ -2,13 +2,7 @@
 
 import { useActionState, useState, useCallback } from 'react'
 import type { CorporateSkill, CorporateSkillVersion } from '@/lib/db/schema'
-import type { SkillProjectAssignmentRow } from '@/lib/services/corporate-skills'
-import {
-  updateSkillMetadataAction,
-  publishVersionAction,
-  assignToProjectAction,
-  unassignAction,
-} from '../actions'
+import { updateSkillMetadataAction, publishVersionAction } from '../actions'
 
 // ============================================================================
 // Types
@@ -17,7 +11,6 @@ import {
 interface SkillDetailViewProps {
   skill: CorporateSkill
   versions: CorporateSkillVersion[]
-  assignments: SkillProjectAssignmentRow[]
 }
 
 // ============================================================================
@@ -93,21 +86,6 @@ function btnPrimary(pending: boolean): React.CSSProperties {
     fontWeight: 600,
     fontSize: '0.9375rem',
     cursor: pending ? 'not-allowed' : 'pointer',
-  }
-}
-
-function btnDanger(pending: boolean): React.CSSProperties {
-  return {
-    padding: '0.25rem 0.625rem',
-    fontSize: '0.8125rem',
-    fontWeight: 500,
-    color: 'var(--danger)',
-    background: 'var(--danger-soft)',
-    border: '1px solid color-mix(in srgb, var(--danger) 20%, transparent)',
-    borderRadius: 'var(--cl-radius-sm)',
-    cursor: pending ? 'not-allowed' : 'pointer',
-    opacity: pending ? 0.6 : 1,
-    whiteSpace: 'nowrap' as const,
   }
 }
 
@@ -297,6 +275,7 @@ function PublishVersionSection({
   const [content, setContent] = useState(() =>
     latestVersion ? latestVersion.content : skillTemplate(skill.slug, skill.name),
   )
+  const [activePanel, setActivePanel] = useState<'editor' | 'preview'>('editor')
 
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value)
@@ -325,12 +304,41 @@ function PublishVersionSection({
       <form action={action} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <input type="hidden" name="skillId" value={skill.id} />
 
-        {/* Split-pane editor */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-              Editor
-            </span>
+        <div
+          role="tablist"
+          aria-label="Skill content view"
+          style={{ display: 'flex', gap: '0.25rem', borderBottom: '1px solid var(--border-color)' }}
+        >
+          {(['editor', 'preview'] as const).map((panel) => (
+            <button
+              key={panel}
+              type="button"
+              role="tab"
+              aria-selected={activePanel === panel}
+              onClick={() => setActivePanel(panel)}
+              style={{
+                padding: '0.5rem 0.75rem',
+                border: 'none',
+                borderBottom: activePanel === panel ? '2px solid var(--cl-primary)' : '2px solid transparent',
+                color: activePanel === panel ? 'var(--cl-primary)' : 'var(--text-muted)',
+                background: 'transparent',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              {panel === 'editor' ? 'Editor' : 'Preview'}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ minWidth: 0 }}>
+          <div
+            role="tabpanel"
+            aria-label="Editor"
+            hidden={activePanel !== 'editor'}
+            style={{ flexDirection: 'column', gap: '0.375rem' }}
+          >
             <textarea
               name="content"
               required
@@ -353,10 +361,12 @@ function PublishVersionSection({
               }}
             />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
-              Preview
-            </span>
+          <div
+            role="tabpanel"
+            aria-label="Preview"
+            hidden={activePanel !== 'preview'}
+            style={{ minWidth: 0 }}
+          >
             <div
               style={{
                 minHeight: '500px',
@@ -470,139 +480,15 @@ function VersionHistorySection({ versions }: { versions: CorporateSkillVersion[]
 }
 
 // ============================================================================
-// Section D — ProjectAssignmentsSection
-// ============================================================================
-
-function ProjectAssignmentsSection({
-  skill,
-  assignments,
-}: {
-  skill: CorporateSkill
-  assignments: SkillProjectAssignmentRow[]
-}) {
-  const [assignState, doAssign, assignPending] = useActionState(assignToProjectAction, {})
-  const [unassignState, doUnassign, unassignPending] = useActionState(unassignAction, {})
-
-  return (
-    <div style={cardStyle}>
-      <h2 style={cardTitleStyle}>Project Assignments</h2>
-
-      {/* Assign form */}
-      <form action={doAssign} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.5rem' }}>
-        <input type="hidden" name="skillId" value={skill.id} />
-        <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text)' }}>
-          Assign to Project
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label style={{ ...labelStyle, fontSize: '0.8125rem' }}>Project Slug</label>
-            <input
-              name="projectSlug"
-              type="text"
-              placeholder="my-project"
-              required
-              style={{ ...inputStyle, height: '32px', fontSize: '0.875rem' }}
-            />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <label style={{ ...labelStyle, fontSize: '0.8125rem' }}>Version (empty = latest)</label>
-            <input
-              name="versionId"
-              type="text"
-              placeholder="Leave empty for latest"
-              style={{ ...inputStyle, height: '32px', fontSize: '0.875rem' }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', paddingBottom: '2px' }}>
-            <input name="failClosed" type="checkbox" value="on" id={`fc-${skill.id}`} />
-            <label htmlFor={`fc-${skill.id}`} style={{ ...labelStyle, fontSize: '0.8125rem', whiteSpace: 'nowrap' }}>
-              Fail Closed
-            </label>
-          </div>
-        </div>
-        {assignState.error && <p style={errorStyle}>{assignState.error}</p>}
-        {assignState.success && <p style={successStyle}>Assigned.</p>}
-        <div>
-          <button type="submit" disabled={assignPending} style={btnPrimary(assignPending)}>
-            {assignPending ? 'Assigning…' : 'Assign to Project'}
-          </button>
-        </div>
-      </form>
-
-      {/* Current assignments */}
-      <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text)' }}>
-        Current Assignments ({assignments.length})
-      </h3>
-      {assignments.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0 }}>
-          Not assigned to any projects yet.
-        </p>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {assignments.map((a) => (
-            <div
-              key={a.projectSlug}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.625rem 0.75rem',
-                background: 'var(--bg-subtle)',
-                border: '1px solid var(--border-color)',
-                borderRadius: 'var(--cl-radius-sm)',
-                gap: '0.75rem',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <code style={{ fontFamily: 'monospace', fontSize: '0.875rem', color: 'var(--text)' }}>
-                  {a.projectSlug}
-                </code>
-                {a.failClosed && (
-                  <span
-                    style={{
-                      padding: '0.125rem 0.375rem',
-                      borderRadius: '999px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      background: 'var(--danger-soft)',
-                      color: 'var(--danger)',
-                    }}
-                  >
-                    fail-closed
-                  </span>
-                )}
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {a.versionId ? `pinned to version` : 'latest version'}
-                </span>
-              </div>
-              <form action={doUnassign}>
-                <input type="hidden" name="skillId" value={skill.id} />
-                <input type="hidden" name="projectSlug" value={a.projectSlug} />
-                <button type="submit" disabled={unassignPending} style={btnDanger(unassignPending)}>
-                  {unassignPending ? 'Removing…' : 'Unassign'}
-                </button>
-              </form>
-            </div>
-          ))}
-          {unassignState.error && <p style={errorStyle}>{unassignState.error}</p>}
-          {unassignState.success && <p style={successStyle}>Unassigned.</p>}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ============================================================================
 // SkillDetailView (main export)
 // ============================================================================
 
-export function SkillDetailView({ skill, versions, assignments }: SkillDetailViewProps) {
+export function SkillDetailView({ skill, versions }: SkillDetailViewProps) {
   return (
     <div>
       <MetadataSection skill={skill} />
       <PublishVersionSection skill={skill} versions={versions} />
       <VersionHistorySection versions={versions} />
-      <ProjectAssignmentsSection skill={skill} assignments={assignments} />
     </div>
   )
 }

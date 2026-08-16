@@ -41,7 +41,7 @@ export default async function SkillsPage() {
             + New Skill
           </Link>
         </div>
-        <p className="subtitle">Manage the corporate skill catalog and project assignments.</p>
+        <p className="subtitle">Manage the global corporate skill catalog.</p>
       </div>
 
       <SkillsForm initialSkills={skills} />

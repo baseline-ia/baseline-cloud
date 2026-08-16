@@ -52,7 +52,7 @@ export default async function SkillsPage() {
           >
             No skills installed yet.
           </p>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', maxWidth: '480px', margin: '0 auto' }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', margin: 0 }}>
             Developers can install baseline skills via the CLI.
           </p>
         </div>

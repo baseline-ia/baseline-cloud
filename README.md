@@ -13,6 +13,7 @@ Self-hosted telemetry dashboard for the [`baseline`](https://github.com/amsinteg
 - 📈 **Dashboard** with overview, event browser, per-developer stats, per-project activity, and activity feed.
 - 💰 **Per-change ROI**: estimate time at planning time (`--estimate small|medium|large|xlarge|240|4h`); cloud computes actual time (open→close) and shows time saved vs. estimate.
 - 👥 **Admin panel** for user management, token issuance/revocation, and time-baseline configuration.
+- 🧩 **Global corporate skills**: admins manage versioned SKILL.md files in the catalog; every enrolled project receives the latest published versions through the skills API.
 - 🔒 **Audit log** for signups, logins, token issuance/revocation, settings changes.
 - 🗂️ **Project enrollment**: admins control which projects are allowed to send telemetry. Non-enrolled projects receive `403 project_not_enrolled`.
 - 🐳 **Single-command deploy** with `docker compose up -d` (Postgres + cloud service, healthchecks, persistent volume).
@@ -313,6 +314,8 @@ The admin configures per-type baselines in **Dashboard → Admin → Settings** 
 | `POST` | `/api/v1/auth/logout` | — | `{ok}` |
 | `POST` | `/api/v1/events` | `{event_type, project, payload, occurred_at?}` | `{ok, id}` |
 | `POST` | `/api/v1/events/batch` | `{events: [...]}` | `{ok, ids}` |
+| `GET` | `/api/v1/skills?project=<slug>` | — | Global published corporate skills for the enrolled project |
+| `GET` | `/api/v1/skills/:slug/verify?project=<slug>` | — | Verify a global skill version and content hash |
 
 ### Dashboard (session cookie)
 
@@ -330,6 +333,7 @@ The admin configures per-type baselines in **Dashboard → Admin → Settings** 
 | `GET` | `/dashboard/admin/users` | User management (admin) |
 | `GET` | `/dashboard/admin/settings` | Time baselines (admin) |
 | `GET` | `/dashboard/admin/projects` | Project enrollment (admin) |
+| `GET` | `/dashboard/admin/skills` | Global corporate skill catalog (admin) |
 
 ## Architecture
 

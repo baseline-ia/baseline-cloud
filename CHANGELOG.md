@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Return `assigned_skills` from CLI project enrollment so the client can synchronize corporate skills automatically.
+- Corporate skills are global to every project; project assignment controls and storage were removed, and migration `0003_black_mauler` drops the obsolete `project_skill_assignments` table.
 
 ## [0.4.0] - 2026-08-10
 

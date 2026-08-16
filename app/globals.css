@@ -136,6 +136,8 @@
   }
 
   .dashboard-main {
+    width: 100%;
+    min-width: 0;
     max-width: min(1400px, 100%);
     margin: 0 auto;
     padding: 1.5rem;
