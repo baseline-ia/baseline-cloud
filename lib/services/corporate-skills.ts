@@ -249,28 +249,9 @@ export interface SkillAssignmentRow {
 }
 
 export async function getAssignmentsForProject(
-  projectSlug: string,
+  _projectSlug: string,
 ): Promise<SkillAssignmentRow[]> {
-  // Use a lateral-style join to resolve null versionId to latest version.
-  // Since Drizzle doesn't have native LATERAL JOIN support in all versions,
-  // we use a subquery approach: join to the latest version per skill.
-  const latestVersionSubquery = db
-    .select({
-      skillId: corporateSkillVersions.skillId,
-      latestVersionId: sql<string>`(
-        SELECT id FROM corporate_skill_versions v2
-        WHERE v2.skill_id = ${corporateSkillVersions.skillId}
-        ORDER BY v2.version DESC
-        LIMIT 1
-      )`.as('latest_version_id'),
-    })
-    .from(corporateSkillVersions)
-    .groupBy(corporateSkillVersions.skillId)
-    .as('lv')
-
-  // We need to resolve: if versionId IS NULL → use latest version for that skill
-  // if versionId IS NOT NULL → use that specific version
-  // Approach: join the resolved version using a raw SQL expression
+  // Corporate skills are global — all published skills are delivered to every project.
   const rows = await db
     .select({
       slug: corporateSkills.slug,
@@ -278,44 +259,31 @@ export async function getAssignmentsForProject(
       version: corporateSkillVersions.version,
       content: corporateSkillVersions.content,
       contentHash: corporateSkillVersions.contentHash,
-      failClosed: projectSkillAssignments.failClosed,
+      failClosed: corporateSkills.failClosed,
       tool: corporateSkills.tool,
     })
-    .from(projectSkillAssignments)
-    .leftJoin(corporateSkills, eq(projectSkillAssignments.skillId, corporateSkills.id))
-    .leftJoin(
+    .from(corporateSkills)
+    .innerJoin(
       corporateSkillVersions,
       sql`(
-        ${corporateSkillVersions.id} = COALESCE(
-          ${projectSkillAssignments.versionId},
-          (
-            SELECT id FROM corporate_skill_versions v2
-            WHERE v2.skill_id = ${projectSkillAssignments.skillId}
-            ORDER BY v2.version DESC
-            LIMIT 1
-          )
+        ${corporateSkillVersions.id} = (
+          SELECT id FROM corporate_skill_versions v2
+          WHERE v2.skill_id = ${corporateSkills.id}
+          ORDER BY v2.version DESC
+          LIMIT 1
         )
       )`,
     )
-    .where(eq(projectSkillAssignments.projectSlug, projectSlug))
 
-  return rows
-    .filter((r): r is SkillAssignmentRow =>
-      r.slug !== null &&
-      r.name !== null &&
-      r.version !== null &&
-      r.content !== null &&
-      r.contentHash !== null,
-    )
-    .map((r) => ({
-      slug: r.slug!,
-      name: r.name!,
-      version: r.version!,
-      content: r.content!,
-      contentHash: r.contentHash!,
-      failClosed: r.failClosed,
-      tool: r.tool ?? null,
-    }))
+  return rows.map((r) => ({
+    slug: r.slug,
+    name: r.name,
+    version: r.version,
+    content: r.content,
+    contentHash: r.contentHash,
+    failClosed: r.failClosed,
+    tool: r.tool ?? null,
+  }))
 }
 
 // ============================================================================
