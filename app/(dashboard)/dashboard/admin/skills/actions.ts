@@ -29,7 +29,7 @@ const CreateSkillSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug may only contain lowercase letters, digits, and hyphens.'),
   name: z.string().min(1, 'Name is required.').max(200, 'Name must be 200 characters or fewer.'),
   description: z.string().max(1000, 'Description must be 1000 characters or fewer.').optional(),
-  tool: z.enum(['', 'claude', 'opencode', 'kiro']).optional(),
+  tool: z.enum(['', 'kiro']).optional(),
   failClosed: z.preprocess((v) => v === 'on' || v === true || v === 'true', z.boolean()).optional(),
 })
 
@@ -54,7 +54,7 @@ const UpdateSkillMetadataSchema = z.object({
   skillId: z.string().min(1, 'Skill ID is required.'),
   name: z.string().min(1, 'Name is required.').max(200, 'Name must be 200 characters or fewer.'),
   description: z.string().max(1000, 'Description must be 1000 characters or fewer.').optional(),
-  tool: z.enum(['', 'claude', 'opencode', 'kiro']).optional(),
+  tool: z.enum(['', 'kiro']).optional(),
   failClosed: z.preprocess((v) => v === 'on' || v === true || v === 'true', z.boolean()).optional(),
 })
 
@@ -66,7 +66,7 @@ const CreateSkillWithVersionSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug may only contain lowercase letters, digits, and hyphens.'),
   name: z.string().min(1, 'Name is required.').max(200, 'Name must be 200 characters or fewer.'),
   description: z.string().max(1000, 'Description must be 1000 characters or fewer.').optional(),
-  tool: z.enum(['', 'claude', 'opencode', 'kiro']).optional(),
+  tool: z.enum(['', 'kiro']).optional(),
   failClosed: z.preprocess((v) => v === 'on' || v === true || v === 'true', z.boolean()).optional(),
   content: z.string().min(1, 'Content is required.'),
 })

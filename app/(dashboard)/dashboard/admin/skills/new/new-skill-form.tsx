@@ -241,8 +241,6 @@ export function NewSkillForm() {
               </label>
               <select id="new-tool" name="tool" style={inputStyle}>
                 <option value="">Any</option>
-                <option value="claude">Claude</option>
-                <option value="opencode">OpenCode</option>
                 <option value="kiro">Kiro</option>
               </select>
             </div>

@@ -24,7 +24,7 @@ function makeSkill(overrides: Partial<CorporateSkill & { latestVersion: number |
     slug: 'sdd-apply',
     name: 'SDD Apply',
     description: null,
-    tool: 'claude',
+    tool: 'kiro',
     failClosed: false,
     createdByUserId: null,
     createdAt: new Date('2024-01-01'),

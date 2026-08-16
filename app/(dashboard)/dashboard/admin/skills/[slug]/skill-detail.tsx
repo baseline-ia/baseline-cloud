@@ -250,8 +250,6 @@ function MetadataSection({ skill }: { skill: CorporateSkill }) {
             </label>
             <select id="meta-tool" name="tool" defaultValue={skill.tool ?? ''} style={inputStyle}>
               <option value="">Any</option>
-              <option value="claude">Claude</option>
-              <option value="opencode">OpenCode</option>
               <option value="kiro">Kiro</option>
             </select>
           </div>
