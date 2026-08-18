@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { resolveBearerToken } from '@/lib/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
-import { normalizeSlug, isProjectEnrolled } from '@/lib/services/projects'
+import { normalizeSlug } from '@/lib/services/projects'
 import {
   getAssignmentsForProject,
   createCorporateSkill,
@@ -39,35 +39,21 @@ export async function GET(req: NextRequest) {
   const rl = checkRateLimit(`skills:${resolved.tokenId}`, { limit: 60, windowMs: 60_000 })
   if (!rl.allowed) return rateLimitResponse(rl.retryAfterMs)
 
-  // Step 3: Validate project param
+  // Step 3: Optional project hint — accepted but not required (skills are global)
   const projectParam = req.nextUrl.searchParams.get('project')
-  if (!projectParam) {
-    return NextResponse.json(
-      { error_class: 'validation', error_code: 'project_required' },
-      { status: 400 },
-    )
+  let slug = 'default'
+  if (projectParam) {
+    try {
+      slug = normalizeSlug(projectParam)
+    } catch {
+      return NextResponse.json(
+        { error_class: 'validation', error_code: 'invalid_project_slug' },
+        { status: 400 },
+      )
+    }
   }
 
-  let slug: string
-  try {
-    slug = normalizeSlug(projectParam)
-  } catch {
-    return NextResponse.json(
-      { error_class: 'validation', error_code: 'invalid_project_slug' },
-      { status: 400 },
-    )
-  }
-
-  // Step 4: Enrollment check
-  const enrolled = await isProjectEnrolled(slug)
-  if (!enrolled) {
-    return NextResponse.json(
-      { error_class: 'forbidden', error_code: 'project_not_enrolled', project: slug },
-      { status: 403 },
-    )
-  }
-
-  // Step 5: Fetch assignments
+  // Step 4: Fetch all corporate skills (globally delivered — no enrollment required)
   const skills = await getAssignmentsForProject(slug)
 
   return NextResponse.json({ ok: true, skills }, { status: 200 })
