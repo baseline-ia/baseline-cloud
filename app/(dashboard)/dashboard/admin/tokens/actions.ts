@@ -19,7 +19,14 @@ export async function createTokenAction(
   const issued = await issueToken({ userId: session.userId, username: session.username, name })
 
   revalidatePath('/dashboard/admin/tokens')
-  redirect(`/dashboard/admin/tokens?token=${encodeURIComponent(issued.raw)}`)
+  const params = new URLSearchParams({ token: issued.raw })
+  const tab = formData.get('tab') as string | null
+  const search = formData.get('q') as string | null
+  const page = formData.get('page') as string | null
+  if (tab) params.set('tab', tab)
+  if (search) params.set('q', search)
+  if (page) params.set('page', page)
+  redirect(`/dashboard/admin/tokens?${params.toString()}`)
 }
 
 export async function revokeTokenAction(formData: FormData): Promise<void> {

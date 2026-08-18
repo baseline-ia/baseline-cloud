@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import { createTokenAction } from './actions'
 
-export function CreateTokenForm() {
+export function CreateTokenForm({ tab, search, page }: { tab: string; search: string; page: number }) {
   const [state, action, pending] = useActionState(createTokenAction, {})
 
   return (
@@ -18,6 +18,9 @@ export function CreateTokenForm() {
         gap: '0.75rem',
       }}
     >
+      <input type="hidden" name="tab" value={tab} />
+      <input type="hidden" name="q" value={search} />
+      <input type="hidden" name="page" value={page} />
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem' }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
           <label
