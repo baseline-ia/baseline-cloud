@@ -3,15 +3,23 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
-import { listCorporateSkills } from '@/lib/services/corporate-skills'
+import {
+  listAdminCorporateSkills,
+  parseAdminCorporateSkillListParams,
+} from '@/lib/services/corporate-skills'
 import { SkillsForm } from './skills-form'
 
-export default async function SkillsPage() {
+export default async function SkillsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const cookieStore = await cookies()
   const session = await resolveSession(cookieStore.get('baseline_dashboard_session')?.value)
   if (!session || session.role !== 'admin') redirect('/dashboard')
 
-  const skills = await listCorporateSkills()
+  const listParams = parseAdminCorporateSkillListParams(await searchParams)
+  const skillList = await listAdminCorporateSkills(listParams)
 
   return (
     <div>
@@ -44,7 +52,13 @@ export default async function SkillsPage() {
         <p className="subtitle">Manage the global corporate skill catalog.</p>
       </div>
 
-      <SkillsForm initialSkills={skills} />
+      <SkillsForm
+        initialSkills={skillList.rows}
+        search={listParams.search}
+        page={skillList.page}
+        total={skillList.total}
+        totalPages={skillList.totalPages}
+      />
     </div>
   )
 }

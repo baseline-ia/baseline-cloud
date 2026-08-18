@@ -1,5 +1,5 @@
 import { Zap } from 'lucide-react';
-import { getSkillAdoption } from '@/lib/services/metrics';
+import { getSkillAdoptionPage, parseSkillAdoptionParams } from '@/lib/services/metrics';
 import {
   Table,
   TableHeader,
@@ -18,8 +18,22 @@ function formatDate(date: Date | null): string {
   });
 }
 
-export default async function SkillsPage() {
-  const skills = await getSkillAdoption();
+export default async function SkillsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const listParams = parseSkillAdoptionParams(await searchParams);
+  const skillList = await getSkillAdoptionPage(listParams);
+  const { rows: skills, total, page, totalPages } = skillList;
+
+  function skillListHref(nextPage: number) {
+    const params = new URLSearchParams();
+    if (listParams.search) params.set('q', listParams.search);
+    if (nextPage > 1) params.set('page', String(nextPage));
+    const query = params.toString();
+    return `/dashboard/skills${query ? `?${query}` : ''}`;
+  }
 
   return (
     <div>
@@ -31,41 +45,43 @@ export default async function SkillsPage() {
         <p className="subtitle">Baseline skill adoption across your team</p>
       </div>
 
-      {skills.length === 0 ? (
-        <div
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--cl-radius)',
-            padding: '3rem 1.5rem',
-            textAlign: 'center',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <p
-            style={{
-              fontSize: '1.0625rem',
-              fontWeight: 600,
-              color: 'var(--text)',
-              marginBottom: '0.5rem',
-            }}
-          >
-            No skills installed yet.
-          </p>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', margin: 0 }}>
-            Developers can install baseline skills via the CLI.
-          </p>
-        </div>
-      ) : (
-        <div
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--cl-radius)',
-            boxShadow: 'var(--shadow-sm)',
-            overflow: 'hidden',
-          }}
-        >
+      <div
+        style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--cl-radius)',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+        }}
+      >
+        <form method="get" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '1.25rem 1.5rem' }}>
+          <label htmlFor="skill-adoption-search" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>
+            Search
+          </label>
+          <input
+            id="skill-adoption-search"
+            name="q"
+            type="search"
+            defaultValue={listParams.search}
+            placeholder="Skill name or tool"
+            aria-label="Search skill adoption"
+            style={{ height: '36px', padding: '0 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', fontSize: '0.9375rem', color: 'var(--text)', background: 'var(--bg-subtle)', width: 'min(100%, 360px)' }}
+          />
+          <input type="hidden" name="page" value="1" />
+          <button type="submit" style={{ height: '36px', padding: '0 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', background: 'var(--bg-subtle)', color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }}>
+            Search
+          </button>
+        </form>
+        {skills.length === 0 ? (
+          <div style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '1.0625rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
+              No skills installed yet.
+            </p>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--text-muted)', margin: 0 }}>
+              {listParams.search ? 'No skill adoption matches your search.' : 'Developers can install baseline skills via the CLI.'}
+            </p>
+          </div>
+        ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -134,8 +150,15 @@ export default async function SkillsPage() {
               ))}
             </TableBody>
           </Table>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          <span>{total} skill{total === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {page > 1 && <a href={skillListHref(page - 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Previous</a>}
+            {page < totalPages && <a href={skillListHref(page + 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Next</a>}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

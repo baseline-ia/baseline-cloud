@@ -1,5 +1,5 @@
 import { GitMerge } from 'lucide-react';
-import { listChanges, type ChangeRecord } from '@/lib/services/metrics';
+import { listChangesPage, parseChangesParams } from '@/lib/services/metrics';
 import {
   Table,
   TableHeader,
@@ -93,23 +93,22 @@ function roiColor(pct: number | null): string {
   return 'var(--text-muted)';
 }
 
-function sortChanges(changes: ChangeRecord[]): ChangeRecord[] {
-  const closed = changes
-    .filter((c) => c.closedAt !== null)
-    .sort((a, b) => (b.closedAt?.getTime() ?? 0) - (a.closedAt?.getTime() ?? 0));
-  const open = changes
-    .filter((c) => c.closedAt === null)
-    .sort((a, b) => b.openedAt.getTime() - a.openedAt.getTime());
-  return [...closed, ...open];
-}
+export default async function ChangesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const listParams = parseChangesParams(await searchParams);
+  const changeList = await listChangesPage(listParams);
+  const { rows: changes, total, closed, open, page, totalPages } = changeList;
 
-export default async function ChangesPage() {
-  const rawChanges = await listChanges();
-  const changes = sortChanges(rawChanges);
-
-  const total = changes.length;
-  const closed = changes.filter((c) => c.closedAt !== null).length;
-  const open = total - closed;
+  function changesListHref(nextPage: number) {
+    const params = new URLSearchParams();
+    if (listParams.search) params.set('q', listParams.search);
+    if (nextPage > 1) params.set('page', String(nextPage));
+    const query = params.toString();
+    return `/dashboard/changes${query ? `?${query}` : ''}`;
+  }
 
   return (
     <div>
@@ -161,6 +160,24 @@ export default async function ChangesPage() {
           overflow: 'hidden',
         }}
       >
+        <form method="get" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '1.25rem 1.5rem' }}>
+          <label htmlFor="changes-search" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>
+            Search
+          </label>
+          <input
+            id="changes-search"
+            name="q"
+            type="search"
+            defaultValue={listParams.search}
+            placeholder="Project, change name, or developer"
+            aria-label="Search changes"
+            style={{ height: '36px', padding: '0 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', fontSize: '0.9375rem', color: 'var(--text)', background: 'var(--bg-subtle)', width: 'min(100%, 360px)' }}
+          />
+          <input type="hidden" name="page" value="1" />
+          <button type="submit" style={{ height: '36px', padding: '0 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', background: 'var(--bg-subtle)', color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }}>
+            Search
+          </button>
+        </form>
         <Table>
           <TableHeader>
             <TableRow style={{ borderBottom: '1px solid var(--border-color)' }}>
@@ -246,6 +263,13 @@ export default async function ChangesPage() {
             ))}
           </TableBody>
         </Table>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          <span>{total} change{total === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {page > 1 && <a href={changesListHref(page - 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Previous</a>}
+            {page < totalPages && <a href={changesListHref(page + 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Next</a>}
+          </div>
+        </div>
       </div>
     </div>
   );

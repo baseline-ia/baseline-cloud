@@ -14,6 +14,18 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SkillsForm } from './skills-form'
 import type { CorporateSkill } from '@/lib/db/schema'
 
+function renderSkills(initialSkills: Array<CorporateSkill & { latestVersion: number | null }>, overrides: Partial<{ search: string; page: number; total: number; totalPages: number }> = {}) {
+  return render(
+    <SkillsForm
+      initialSkills={initialSkills}
+      search={overrides.search ?? ''}
+      page={overrides.page ?? 1}
+      total={overrides.total ?? initialSkills.length}
+      totalPages={overrides.totalPages ?? 1}
+    />,
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -46,32 +58,32 @@ describe('SkillsForm', () => {
   describe('Skills table', () => {
     it('renders skill rows with slug and name', () => {
       const skills = [makeSkill()]
-      render(<SkillsForm initialSkills={skills} />)
+       renderSkills(skills)
 
       expect(screen.getByText('sdd-apply')).toBeInTheDocument()
       expect(screen.getByText('SDD Apply')).toBeInTheDocument()
     })
 
     it('shows "No skills" message when list is empty', () => {
-      render(<SkillsForm initialSkills={[]} />)
+       renderSkills([])
       expect(screen.getByText(/no skills/i)).toBeInTheDocument()
     })
 
     it('shows latestVersion for a skill', () => {
       const skills = [makeSkill({ latestVersion: 3 })]
-      render(<SkillsForm initialSkills={skills} />)
+       renderSkills(skills)
       expect(screen.getByText('v3')).toBeInTheDocument()
     })
 
     it('shows "No versions" when latestVersion is null', () => {
       const skills = [makeSkill({ latestVersion: null })]
-      render(<SkillsForm initialSkills={skills} />)
+       renderSkills(skills)
       expect(screen.getByText(/no versions/i)).toBeInTheDocument()
     })
 
     it('renders a Manage link pointing to the skill detail page', () => {
       const skills = [makeSkill({ slug: 'sdd-apply' })]
-      render(<SkillsForm initialSkills={skills} />)
+       renderSkills(skills)
 
       const link = screen.getByRole('link', { name: /manage/i })
       expect(link).toBeInTheDocument()

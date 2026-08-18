@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { eq, desc, max, sql } from 'drizzle-orm'
+import { count, desc, eq, ilike, max, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import {
   corporateSkills,
@@ -41,6 +41,21 @@ export class SkillNotFoundError extends Error {
   }
 }
 
+export const SKILL_VERSION_PAGE_SIZE = 50
+
+export interface SkillVersionPageParams {
+  page: number
+}
+
+export interface SkillVersionPage {
+  skill: CorporateSkill
+  latestVersion: CorporateSkillVersion | null
+  versions: CorporateSkillVersion[]
+  total: number
+  page: number
+  totalPages: number
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -57,6 +72,50 @@ function isUniqueViolation(error: unknown): boolean {
 // ============================================================================
 // listCorporateSkills
 // ============================================================================
+
+export const ADMIN_SKILL_PAGE_SIZE = 50
+
+export interface AdminCorporateSkillListParams {
+  search: string
+  page: number
+}
+
+export interface AdminCorporateSkillList {
+  rows: Array<CorporateSkill & { latestVersion: number | null }>
+  total: number
+  page: number
+  totalPages: number
+}
+
+type SearchParams = Record<string, string | string[] | undefined>
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+export function parseAdminCorporateSkillListParams(
+  params: SearchParams,
+): AdminCorporateSkillListParams {
+  const search = firstParam(params.q)?.trim() ?? ''
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10)
+
+  return {
+    search,
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+  }
+}
+
+function adminCorporateSkillListWhere(search: string) {
+  if (!search) return undefined
+
+  const searchPattern = `%${search}%`
+  return or(
+    ilike(corporateSkills.slug, searchPattern),
+    ilike(corporateSkills.name, searchPattern),
+    ilike(corporateSkills.description, searchPattern),
+    ilike(corporateSkills.tool, searchPattern),
+  )
+}
 
 export async function listCorporateSkills(): Promise<
   Array<CorporateSkill & { latestVersion: number | null }>
@@ -93,6 +152,52 @@ export async function listCorporateSkills(): Promise<
   }))
 }
 
+export async function listAdminCorporateSkills(
+  params: AdminCorporateSkillListParams,
+): Promise<AdminCorporateSkillList> {
+  const where = adminCorporateSkillListWhere(params.search)
+  const countRows = await db.select({ total: count() }).from(corporateSkills).where(where)
+
+  const total = Number(countRows[0]?.total ?? 0)
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_SKILL_PAGE_SIZE))
+  const page = Math.min(params.page, totalPages)
+  const latestVersionSubquery = db
+    .select({
+      skillId: corporateSkillVersions.skillId,
+      latestVersion: max(corporateSkillVersions.version).as('latest_version'),
+    })
+    .from(corporateSkillVersions)
+    .groupBy(corporateSkillVersions.skillId)
+    .as('latest_versions')
+
+  const rows = await db
+    .select({
+      id: corporateSkills.id,
+      slug: corporateSkills.slug,
+      name: corporateSkills.name,
+      description: corporateSkills.description,
+      tool: corporateSkills.tool,
+      failClosed: corporateSkills.failClosed,
+      createdByUserId: corporateSkills.createdByUserId,
+      createdAt: corporateSkills.createdAt,
+      updatedAt: corporateSkills.updatedAt,
+      latestVersion: latestVersionSubquery.latestVersion,
+    })
+    .from(corporateSkills)
+    .leftJoin(latestVersionSubquery, eq(corporateSkills.id, latestVersionSubquery.skillId))
+    .where(where)
+    .orderBy(desc(corporateSkills.createdAt))
+    .limit(ADMIN_SKILL_PAGE_SIZE)
+    .offset((page - 1) * ADMIN_SKILL_PAGE_SIZE)
+
+  return {
+    rows: rows.map((row) => ({ ...row, latestVersion: row.latestVersion ?? null })),
+    total,
+    page,
+    totalPages,
+  }
+}
+
 // ============================================================================
 // getCorporateSkill
 // ============================================================================
@@ -116,6 +221,58 @@ export async function getCorporateSkill(
     .orderBy(desc(corporateSkillVersions.version))
 
   return { skill, versions }
+}
+
+export function parseSkillVersionPageParams(
+  params: SearchParams,
+): SkillVersionPageParams {
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10)
+  return { page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1 }
+}
+
+export async function getCorporateSkillVersionPage(
+  slug: string,
+  params: SkillVersionPageParams,
+): Promise<SkillVersionPage | null> {
+  const skillRows = await db
+    .select()
+    .from(corporateSkills)
+    .where(eq(corporateSkills.slug, slug))
+    .limit(1)
+
+  if (skillRows.length === 0) return null
+  const skill = skillRows[0]
+  const versionWhere = eq(corporateSkillVersions.skillId, skill.id)
+
+  const latestRows = await db
+    .select()
+    .from(corporateSkillVersions)
+    .where(versionWhere)
+    .orderBy(desc(corporateSkillVersions.version))
+    .limit(1)
+  const countRows = await db
+    .select({ total: count() })
+    .from(corporateSkillVersions)
+    .where(versionWhere)
+  const total = Number(countRows[0]?.total ?? 0)
+  const totalPages = Math.max(1, Math.ceil(total / SKILL_VERSION_PAGE_SIZE))
+  const page = Math.min(params.page, totalPages)
+  const versions = await db
+    .select()
+    .from(corporateSkillVersions)
+    .where(versionWhere)
+    .orderBy(desc(corporateSkillVersions.version))
+    .limit(SKILL_VERSION_PAGE_SIZE)
+    .offset((page - 1) * SKILL_VERSION_PAGE_SIZE)
+
+  return {
+    skill,
+    latestVersion: latestRows[0] ?? null,
+    versions,
+    total,
+    page,
+    totalPages,
+  }
 }
 
 // ============================================================================

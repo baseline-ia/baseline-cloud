@@ -1,5 +1,5 @@
 import { Radio } from 'lucide-react';
-import { getRecentEvents } from '@/lib/services/metrics';
+import { getRecentEventsPage, parseRecentEventsParams } from '@/lib/services/metrics';
 import {
   Table,
   TableHeader,
@@ -68,8 +68,22 @@ function eventTypeBadge(eventType: string) {
   );
 }
 
-export default async function EventsPage() {
-  const evts = await getRecentEvents(200);
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const listParams = parseRecentEventsParams(await searchParams);
+  const eventList = await getRecentEventsPage(listParams);
+  const { rows: evts, total, page, totalPages } = eventList;
+
+  function eventListHref(nextPage: number) {
+    const params = new URLSearchParams();
+    if (listParams.search) params.set('q', listParams.search);
+    if (nextPage > 1) params.set('page', String(nextPage));
+    const query = params.toString();
+    return `/dashboard/events${query ? `?${query}` : ''}`;
+  }
 
   return (
     <div>
@@ -78,7 +92,7 @@ export default async function EventsPage() {
           <Radio size={22} />
           Events
         </h1>
-        <p className="subtitle">Raw event log — last 200 events</p>
+        <p className="subtitle">Raw event log</p>
       </div>
 
       <div
@@ -90,11 +104,30 @@ export default async function EventsPage() {
           overflow: 'hidden',
         }}
       >
+        <form method="get" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '1.25rem 1.5rem' }}>
+          <label htmlFor="event-search" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>
+            Search
+          </label>
+          <input
+            id="event-search"
+            name="q"
+            type="search"
+            defaultValue={listParams.search}
+            placeholder="Project, event type, or developer"
+            aria-label="Search events"
+            style={{ height: '36px', padding: '0 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', fontSize: '0.9375rem', color: 'var(--text)', background: 'var(--bg-subtle)', width: 'min(100%, 360px)' }}
+          />
+          <input type="hidden" name="page" value="1" />
+          <button type="submit" style={{ height: '36px', padding: '0 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', background: 'var(--bg-subtle)', color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }}>
+            Search
+          </button>
+        </form>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
               <TableHead>Project</TableHead>
+              <TableHead>Developer</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Payload</TableHead>
             </TableRow>
@@ -103,7 +136,7 @@ export default async function EventsPage() {
             {evts.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   style={{
                     textAlign: 'center',
                     padding: '3rem',
@@ -132,6 +165,9 @@ export default async function EventsPage() {
                 >
                   {evt.project || '–'}
                 </TableCell>
+                <TableCell style={{ fontSize: '0.9375rem', color: 'var(--text-muted)' }}>
+                  {evt.username || '–'}
+                </TableCell>
                 <TableCell
                   style={{
                     fontSize: '0.8125rem',
@@ -159,6 +195,13 @@ export default async function EventsPage() {
             ))}
           </TableBody>
         </Table>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          <span>{total} event{total === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {page > 1 && <a href={eventListHref(page - 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Previous</a>}
+            {page < totalPages && <a href={eventListHref(page + 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Next</a>}
+          </div>
+        </div>
       </div>
     </div>
   );

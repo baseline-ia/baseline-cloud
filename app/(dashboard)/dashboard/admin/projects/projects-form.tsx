@@ -1,9 +1,8 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState } from 'react'
 import type { Project } from '@/lib/db/schema'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import {
   enrollProjectAction,
   disableProjectAction,
@@ -11,10 +10,12 @@ import {
   deleteProjectAction,
 } from './actions'
 
-const PAGE_SIZE = 50
-
 interface ProjectsFormProps {
   projects: Project[]
+  search: string
+  page: number
+  total: number
+  totalPages: number
 }
 
 const inputStyle: React.CSSProperties = {
@@ -337,26 +338,13 @@ function ProjectRow({ project }: { project: Project }) {
   )
 }
 
-export function ProjectsForm({ projects }: ProjectsFormProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(0)
-
-  const q = searchQuery.trim().toLowerCase()
-  const filteredProjects = q
-    ? projects.filter(
-        (p) => p.slug.toLowerCase().includes(q) || p.name.toLowerCase().includes(q),
-      )
-    : projects
-
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE))
-  const visibleProjects = filteredProjects.slice(
-    currentPage * PAGE_SIZE,
-    (currentPage + 1) * PAGE_SIZE,
-  )
-
-  function onSearchChange(value: string) {
-    setSearchQuery(value)
-    setCurrentPage(0)
+export function ProjectsForm({ projects, search, page, total, totalPages }: ProjectsFormProps) {
+  function projectListHref(nextPage: number) {
+    const params = new URLSearchParams()
+    if (search) params.set('q', search)
+    if (nextPage > 1) params.set('page', String(nextPage))
+    const query = params.toString()
+    return `/dashboard/admin/projects${query ? `?${query}` : ''}`
   }
 
   return (
@@ -364,13 +352,19 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
       <EnrollForm />
 
       <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <Input
-          type="text"
-          aria-label="Search projects by slug or name"
-          placeholder="Search by slug or name…"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
+        <form method="get" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <Input
+            type="search"
+            name="q"
+            aria-label="Search projects by slug or name"
+            placeholder="Search by slug or name…"
+            defaultValue={search}
+          />
+          <input type="hidden" name="page" value="1" />
+          <button type="submit" style={{ height: '36px', padding: '0 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', background: 'var(--bg-subtle)', color: 'var(--text)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            Search
+          </button>
+        </form>
         <p
           style={{
             margin: 0,
@@ -378,7 +372,7 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
             color: 'var(--text-muted)',
           }}
         >
-          {filteredProjects.length} of {projects.length} projects
+          {search ? `${total} matching projects` : `${total} projects`}
         </p>
       </div>
 
@@ -462,7 +456,7 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
             </tr>
           </thead>
           <tbody>
-            {filteredProjects.length === 0 ? (
+            {projects.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
@@ -477,7 +471,7 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
                 </td>
               </tr>
             ) : (
-              visibleProjects.map((project) => (
+              projects.map((project) => (
                 <ProjectRow key={project.slug} project={project} />
               ))
             )}
@@ -495,25 +489,11 @@ export function ProjectsForm({ projects }: ProjectsFormProps) {
             justifyContent: 'center',
           }}
         >
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage((p) => p - 1)}
-          >
-            Prev
-          </Button>
-          <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-            Page {currentPage + 1} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentPage === totalPages - 1}
-            onClick={() => setCurrentPage((p) => p + 1)}
-          >
-            Next
-          </Button>
+            {page > 1 && <a href={projectListHref(page - 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Prev</a>}
+            <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+            Page {page} of {totalPages}
+            </span>
+            {page < totalPages && <a href={projectListHref(page + 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Next</a>}
         </div>
       )}
     </div>

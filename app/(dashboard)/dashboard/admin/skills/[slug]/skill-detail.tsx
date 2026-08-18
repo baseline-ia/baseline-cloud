@@ -10,7 +10,11 @@ import { updateSkillMetadataAction, publishVersionAction } from '../actions'
 
 interface SkillDetailViewProps {
   skill: CorporateSkill
+  latestVersion: CorporateSkillVersion | null
   versions: CorporateSkillVersion[]
+  versionPage: number
+  versionTotal: number
+  versionTotalPages: number
 }
 
 // ============================================================================
@@ -264,13 +268,12 @@ function MetadataSection({ skill }: { skill: CorporateSkill }) {
 
 function PublishVersionSection({
   skill,
-  versions,
+  latestVersion,
 }: {
   skill: CorporateSkill
-  versions: CorporateSkillVersion[]
+  latestVersion: CorporateSkillVersion | null
 }) {
   const [state, action, pending] = useActionState(publishVersionAction, {})
-  const latestVersion = versions[0]
   const nextVersionNumber = latestVersion ? latestVersion.version + 1 : 1
   const [content, setContent] = useState(() =>
     latestVersion ? latestVersion.content : skillTemplate(skill.slug, skill.name),
@@ -401,7 +404,23 @@ function PublishVersionSection({
 // Section C — VersionHistorySection
 // ============================================================================
 
-function VersionHistorySection({ versions }: { versions: CorporateSkillVersion[] }) {
+function VersionHistorySection({
+  skillSlug,
+  versions,
+  page,
+  total,
+  totalPages,
+}: {
+  skillSlug: string
+  versions: CorporateSkillVersion[]
+  page: number
+  total: number
+  totalPages: number
+}) {
+  function versionListHref(nextPage: number) {
+    return `/dashboard/admin/skills/${skillSlug}?page=${nextPage}`
+  }
+
   return (
     <div style={cardStyle}>
       <h2 style={cardTitleStyle}>Version History</h2>
@@ -475,6 +494,13 @@ function VersionHistorySection({ versions }: { versions: CorporateSkillVersion[]
           </table>
         </div>
       )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+        <span>{total} version{total === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          {page > 1 && <a href={versionListHref(page - 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Previous</a>}
+          {page < totalPages && <a href={versionListHref(page + 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Next</a>}
+        </div>
+      </div>
     </div>
   )
 }
@@ -483,12 +509,25 @@ function VersionHistorySection({ versions }: { versions: CorporateSkillVersion[]
 // SkillDetailView (main export)
 // ============================================================================
 
-export function SkillDetailView({ skill, versions }: SkillDetailViewProps) {
+export function SkillDetailView({
+  skill,
+  latestVersion,
+  versions,
+  versionPage,
+  versionTotal,
+  versionTotalPages,
+}: SkillDetailViewProps) {
   return (
     <div>
       <MetadataSection skill={skill} />
-      <PublishVersionSection skill={skill} versions={versions} />
-      <VersionHistorySection versions={versions} />
+      <PublishVersionSection skill={skill} latestVersion={latestVersion} />
+      <VersionHistorySection
+        skillSlug={skill.slug}
+        versions={versions}
+        page={versionPage}
+        total={versionTotal}
+        totalPages={versionTotalPages}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { and, eq, gte, sql, desc, count, countDistinct, asc } from 'drizzle-orm';
+import { and, count, countDistinct, desc, eq, gte, ilike, or, sql, asc } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { events, users, settings } from '@/lib/db/schema';
 
@@ -94,6 +94,47 @@ export interface RecentEvent {
   occurredAt: Date;
 }
 
+export const EVENT_LIST_PAGE_SIZE = 50;
+
+export interface RecentEventsParams {
+  search: string;
+  page: number;
+}
+
+export interface RecentEventsPage {
+  rows: RecentEvent[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export function parseRecentEventsParams(params: SearchParams): RecentEventsParams {
+  const search = firstParam(params.q)?.trim() ?? '';
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10);
+
+  return {
+    search,
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+  };
+}
+
+function recentEventsWhere(search: string) {
+  if (!search) return undefined;
+
+  const searchPattern = `%${search}%`;
+  return or(
+    ilike(events.project, searchPattern),
+    ilike(events.eventType, searchPattern),
+    ilike(events.username, searchPattern),
+  );
+}
+
 export async function getRecentEvents(limit = 50): Promise<RecentEvent[]> {
   const rows = await db.select().from(events).orderBy(desc(events.occurredAt)).limit(limit);
   return rows.map((r) => ({
@@ -106,12 +147,60 @@ export async function getRecentEvents(limit = 50): Promise<RecentEvent[]> {
   }));
 }
 
+export async function getRecentEventsPage(params: RecentEventsParams): Promise<RecentEventsPage> {
+  const where = recentEventsWhere(params.search);
+  const countRows = await db.select({ c: count() }).from(events).where(where);
+  const total = Number(countRows[0]?.c ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / EVENT_LIST_PAGE_SIZE));
+  const page = Math.min(params.page, totalPages);
+
+  const rows = await db
+    .select({
+      id: events.id,
+      username: events.username,
+      eventType: events.eventType,
+      project: events.project,
+      payload: events.payload,
+      occurredAt: events.occurredAt,
+    })
+    .from(events)
+    .where(where)
+    .orderBy(desc(events.occurredAt))
+    .limit(EVENT_LIST_PAGE_SIZE)
+    .offset((page - 1) * EVENT_LIST_PAGE_SIZE);
+
+  return { rows, total, page, totalPages };
+}
+
 export interface DeveloperStats {
   username: string;
   totalEvents: number;
   lastSeenAt: Date | null;
   topCommands: Array<{ eventType: string; count: number }>;
   errorRate: number;
+}
+
+export const DEVELOPER_LIST_PAGE_SIZE = 50;
+
+export interface DeveloperStatsParams {
+  search: string;
+  page: number;
+}
+
+export interface DeveloperStatsPage {
+  rows: DeveloperStats[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export function parseDeveloperStatsParams(params: SearchParams): DeveloperStatsParams {
+  const search = firstParam(params.q)?.trim() ?? '';
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10);
+  return {
+    search,
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+  };
 }
 
 export async function getDeveloperStats(): Promise<DeveloperStats[]> {
@@ -163,6 +252,61 @@ export async function getDeveloperStats(): Promise<DeveloperStats[]> {
     });
   }
   return stats;
+}
+
+export async function getDeveloperStatsPage(
+  params: DeveloperStatsParams,
+): Promise<DeveloperStatsPage> {
+  const since = sinceMs(30);
+  const searchWhere = params.search ? ilike(events.username, `%${params.search}%`) : undefined;
+  const where = and(gte(events.occurredAt, since), searchWhere);
+  const countRows = await db
+    .select({ total: countDistinct(events.username) })
+    .from(events)
+    .where(where);
+  const total = Number(countRows[0]?.total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / DEVELOPER_LIST_PAGE_SIZE));
+  const page = Math.min(params.page, totalPages);
+  const rows = await db
+    .select({
+      username: events.username,
+      totalEvents: count(),
+      lastSeenAt: sql<Date | null>`max(${events.occurredAt})`,
+    })
+    .from(events)
+    .where(where)
+    .groupBy(events.username)
+    .orderBy(sql`count(*) desc`)
+    .limit(DEVELOPER_LIST_PAGE_SIZE)
+    .offset((page - 1) * DEVELOPER_LIST_PAGE_SIZE);
+
+  const stats: DeveloperStats[] = [];
+  for (const row of rows) {
+    const developerWhere = and(eq(events.username, row.username), gte(events.occurredAt, since));
+    const topCommands = await db
+      .select({ eventType: events.eventType, c: count() })
+      .from(events)
+      .where(developerWhere)
+      .groupBy(events.eventType)
+      .orderBy(sql`count(*) desc`)
+      .limit(3);
+    const [errRow] = await db
+      .select({ c: count() })
+      .from(events)
+      .where(and(developerWhere, sql`(${events.payload}->>'success')::boolean = false`));
+    const errCount = Number(errRow?.c ?? 0);
+    const totalCount = Number(row.totalEvents ?? 0);
+
+    stats.push({
+      username: row.username,
+      totalEvents: row.totalEvents,
+      lastSeenAt: row.lastSeenAt,
+      topCommands: topCommands.map((command) => ({ eventType: command.eventType, count: command.c })),
+      errorRate: totalCount > 0 ? Math.round((errCount / totalCount) * 1000) / 10 : 0,
+    });
+  }
+
+  return { rows: stats, total, page, totalPages };
 }
 
 export async function getDeveloperDetail(username: string) {
@@ -437,6 +581,32 @@ export interface ChangeRecord {
   roiPct: number | null;
 }
 
+export const CHANGE_LIST_PAGE_SIZE = 50;
+
+export interface ChangesParams {
+  search: string;
+  page: number;
+}
+
+export interface ChangesPage {
+  rows: ChangeRecord[];
+  total: number;
+  closed: number;
+  open: number;
+  page: number;
+  totalPages: number;
+}
+
+export function parseChangesParams(params: SearchParams): ChangesParams {
+  const search = firstParam(params.q)?.trim() ?? '';
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10);
+
+  return {
+    search,
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+  };
+}
+
 export interface ChangeTimeline {
   opens: Array<{ at: Date; workType: string; title?: string }>;
   closes: Array<{ at: Date; durationMs: number; verdict?: string }>;
@@ -540,6 +710,114 @@ export async function listChanges(): Promise<ChangeRecord[]> {
     });
   }
   return records;
+}
+
+export async function listChangesPage(params: ChangesParams): Promise<ChangesPage> {
+  const baselines = await getTimeBaselines();
+  const changeName = sql<string | null>`${events.payload}->>'changeName'`;
+  const latestCloseAt = sql<Date | null>`(
+    SELECT max(close_event.occurred_at)
+    FROM events AS close_event
+    WHERE close_event.event_type = 'change.close'
+      AND close_event.payload->>'changeName' = ${changeName}
+  )`;
+  const latestDurationMs = sql<number | null>`(
+    SELECT NULLIF(close_event.payload->>'durationMs', '')::double precision
+    FROM events AS close_event
+    WHERE close_event.event_type = 'change.close'
+      AND close_event.payload->>'changeName' = ${changeName}
+    ORDER BY close_event.occurred_at DESC
+    LIMIT 1
+  )`;
+  const commitCount = sql<number>`(
+    SELECT count(*)
+    FROM events AS commit_event
+    WHERE commit_event.event_type = 'change.commit'
+      AND commit_event.payload->>'changeName' = ${changeName}
+  )`;
+  const searchPattern = `%${params.search}%`;
+  const searchWhere = params.search
+    ? or(
+        sql`${changeName} ILIKE ${searchPattern}`,
+        ilike(events.project, searchPattern),
+        ilike(events.username, searchPattern),
+      )
+    : undefined;
+  const where = and(
+    eq(events.eventType, 'change.open'),
+    sql`${changeName} IS NOT NULL`,
+    searchWhere,
+  );
+
+  const countRows = await db
+    .select({
+      total: count(),
+      closed: sql<number>`count(*) FILTER (WHERE ${latestCloseAt} IS NOT NULL)`,
+    })
+    .from(events)
+    .where(where);
+  const total = Number(countRows[0]?.total ?? 0);
+  const closed = Number(countRows[0]?.closed ?? 0);
+  const open = total - closed;
+  const totalPages = Math.max(1, Math.ceil(total / CHANGE_LIST_PAGE_SIZE));
+  const page = Math.min(params.page, totalPages);
+
+  const rows = await db
+    .select({
+      changeName,
+      username: events.username,
+      project: events.project,
+      workType: sql<string | null>`${events.payload}->>'workType'`,
+      title: sql<string | null>`${events.payload}->>'title'`,
+      estimateMin: sql<number | null>`NULLIF(${events.payload}->>'estimateMin', '')::double precision`,
+      estimateSource: sql<ChangeRecord['estimateSource'] | null>`${events.payload}->>'estimateSource'`,
+      estimateBucket: sql<string | null>`${events.payload}->>'estimateBucket'`,
+      openedAt: events.occurredAt,
+      closedAt: latestCloseAt,
+      durationMs: latestDurationMs,
+      totalCommits: commitCount,
+    })
+    .from(events)
+    .where(where)
+    .orderBy(sql`${latestCloseAt} IS NULL`, desc(latestCloseAt), desc(events.occurredAt))
+    .limit(CHANGE_LIST_PAGE_SIZE)
+    .offset((page - 1) * CHANGE_LIST_PAGE_SIZE);
+
+  const records: ChangeRecord[] = rows.map((row) => {
+    const workType = row.workType ?? 'feature';
+    const hasPerChangeEstimate = typeof row.estimateMin === 'number' && row.estimateMin > 0;
+    const estimatedBaselineMin = hasPerChangeEstimate
+      ? row.estimateMin!
+      : (baselines[workType] ?? baselines.feature ?? 480);
+    const estimateSource: ChangeRecord['estimateSource'] = hasPerChangeEstimate
+      ? (row.estimateSource ?? 'per-change')
+      : 'admin-default';
+    const actualMin = row.closedAt && row.durationMs !== null ? row.durationMs / 60_000 : null;
+    const savedMin = actualMin !== null ? Math.max(0, estimatedBaselineMin - actualMin) : null;
+    const roiPct =
+      actualMin !== null && estimatedBaselineMin > 0
+        ? Math.round((savedMin! / estimatedBaselineMin) * 1000) / 10
+        : null;
+
+    return {
+      changeName: row.changeName!,
+      username: row.username,
+      workType,
+      title: row.title ?? undefined,
+      openedAt: row.openedAt,
+      closedAt: row.closedAt,
+      durationMs: row.durationMs,
+      totalCommits: Number(row.totalCommits ?? 0),
+      estimatedBaselineMin,
+      estimateSource,
+      estimateBucket: row.estimateBucket ?? undefined,
+      actualMin: actualMin !== null ? Math.round(actualMin * 10) / 10 : null,
+      savedMin: savedMin !== null ? Math.round(savedMin * 10) / 10 : null,
+      roiPct,
+    };
+  });
+
+  return { rows: records, total, closed, open, page, totalPages };
 }
 
 export interface RoiSummary {
@@ -682,6 +960,29 @@ export interface SkillAdoptionRow {
   lastInstalledAt: Date | null;
 }
 
+export const SKILL_ADOPTION_PAGE_SIZE = 50;
+
+export interface SkillAdoptionParams {
+  search: string;
+  page: number;
+}
+
+export interface SkillAdoptionPage {
+  rows: SkillAdoptionRow[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export function parseSkillAdoptionParams(params: SearchParams): SkillAdoptionParams {
+  const search = firstParam(params.q)?.trim() ?? '';
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10);
+  return {
+    search,
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+  };
+}
+
 export async function getSkillAdoption(): Promise<SkillAdoptionRow[]> {
   const rows = await db
     .select({
@@ -703,4 +1004,51 @@ export async function getSkillAdoption(): Promise<SkillAdoptionRow[]> {
       adopters: r.adopters,
       lastInstalledAt: r.lastInstalledAt,
     }));
+}
+
+export async function getSkillAdoptionPage(
+  params: SkillAdoptionParams,
+): Promise<SkillAdoptionPage> {
+  const skillName = sql<string>`${events.payload}->>'skillName'`;
+  const tool = sql<string>`${events.payload}->>'tool'`;
+  const searchPattern = `%${params.search}%`;
+  const searchWhere = params.search
+    ? or(sql`${skillName} ILIKE ${searchPattern}`, sql`${tool} ILIKE ${searchPattern}`)
+    : undefined;
+  const where = and(eq(events.eventType, 'skill.installed'), sql`${skillName} IS NOT NULL`, searchWhere);
+  const groupedSkills = db
+    .select({ skillName, tool })
+    .from(events)
+    .where(where)
+    .groupBy(skillName, tool)
+    .as('skill_adoption_groups');
+  const countRows = await db.select({ total: count() }).from(groupedSkills);
+  const total = Number(countRows[0]?.total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / SKILL_ADOPTION_PAGE_SIZE));
+  const page = Math.min(params.page, totalPages);
+  const rows = await db
+    .select({
+      skillName,
+      tool,
+      adopters: countDistinct(events.userId),
+      lastInstalledAt: sql<Date | null>`max(${events.occurredAt})`,
+    })
+    .from(events)
+    .where(where)
+    .groupBy(skillName, tool)
+    .orderBy(sql`${countDistinct(events.userId)} desc`)
+    .limit(SKILL_ADOPTION_PAGE_SIZE)
+    .offset((page - 1) * SKILL_ADOPTION_PAGE_SIZE);
+
+  return {
+    rows: rows.map((row) => ({
+      skillName: row.skillName!,
+      tool: row.tool ?? 'unknown',
+      adopters: row.adopters,
+      lastInstalledAt: row.lastInstalledAt,
+    })),
+    total,
+    page,
+    totalPages,
+  };
 }

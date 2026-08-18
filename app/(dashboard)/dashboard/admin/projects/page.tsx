@@ -2,15 +2,20 @@ import { FolderKanban } from 'lucide-react'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
-import { listProjects } from '@/lib/services/projects'
+import { listAdminProjects, parseAdminProjectListParams } from '@/lib/services/projects'
 import { ProjectsForm } from './projects-form'
 
-export default async function ProjectsPage() {
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const cookieStore = await cookies()
   const session = await resolveSession(cookieStore.get('baseline_dashboard_session')?.value)
   if (!session || session.role !== 'admin') redirect('/dashboard')
 
-  const projects = await listProjects()
+  const listParams = parseAdminProjectListParams(await searchParams)
+  const projectList = await listAdminProjects(listParams)
 
   return (
     <div>
@@ -22,7 +27,13 @@ export default async function ProjectsPage() {
         <p className="subtitle">Manage the project enrollment allowlist for telemetry ingestion.</p>
       </div>
 
-      <ProjectsForm projects={projects} />
+      <ProjectsForm
+        projects={projectList.rows}
+        search={listParams.search}
+        page={projectList.page}
+        total={projectList.total}
+        totalPages={projectList.totalPages}
+      />
     </div>
   )
 }

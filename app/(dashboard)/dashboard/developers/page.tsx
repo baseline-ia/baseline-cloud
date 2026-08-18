@@ -2,7 +2,7 @@ import { Users } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { resolveSession } from '@/lib/auth';
-import { getDeveloperStats } from '@/lib/services/metrics';
+import { getDeveloperStatsPage, parseDeveloperStatsParams } from '@/lib/services/metrics';
 import {
   Table,
   TableHeader,
@@ -63,12 +63,26 @@ function errorRateBadge(rate: number) {
   );
 }
 
-export default async function DevelopersPage() {
+export default async function DevelopersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const cookieStore = await cookies();
   const session = await resolveSession(cookieStore.get('baseline_dashboard_session')?.value);
   if (!session || session.role !== 'admin') redirect('/dashboard');
 
-  const devs = await getDeveloperStats();
+  const listParams = parseDeveloperStatsParams(await searchParams);
+  const developerList = await getDeveloperStatsPage(listParams);
+  const { rows: devs, total, page, totalPages } = developerList;
+
+  function developerListHref(nextPage: number) {
+    const params = new URLSearchParams();
+    if (listParams.search) params.set('q', listParams.search);
+    if (nextPage > 1) params.set('page', String(nextPage));
+    const query = params.toString();
+    return `/dashboard/developers${query ? `?${query}` : ''}`;
+  }
 
   return (
     <div>
@@ -89,6 +103,24 @@ export default async function DevelopersPage() {
           overflow: 'hidden',
         }}
       >
+        <form method="get" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '1.25rem 1.5rem' }}>
+          <label htmlFor="developer-search" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>
+            Search
+          </label>
+          <input
+            id="developer-search"
+            name="q"
+            type="search"
+            defaultValue={listParams.search}
+            placeholder="Username"
+            aria-label="Search developers"
+            style={{ height: '36px', padding: '0 0.75rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', fontSize: '0.9375rem', color: 'var(--text)', background: 'var(--bg-subtle)', width: 'min(100%, 360px)' }}
+          />
+          <input type="hidden" name="page" value="1" />
+          <button type="submit" style={{ height: '36px', padding: '0 1rem', border: '1px solid var(--border-color)', borderRadius: 'var(--cl-radius-sm)', background: 'var(--bg-subtle)', color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }}>
+            Search
+          </button>
+        </form>
         <Table>
           <TableHeader>
             <TableRow>
@@ -182,6 +214,13 @@ export default async function DevelopersPage() {
             ))}
           </TableBody>
         </Table>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          <span>{total} developer{total === 1 ? '' : 's'} · Page {page} of {totalPages}</span>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {page > 1 && <a href={developerListHref(page - 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Previous</a>}
+            {page < totalPages && <a href={developerListHref(page + 1)} style={{ color: 'var(--cl-primary)', textDecoration: 'none' }}>Next</a>}
+          </div>
+        </div>
       </div>
     </div>
   );

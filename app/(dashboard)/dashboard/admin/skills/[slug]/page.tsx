@@ -3,20 +3,25 @@ import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
-import { getCorporateSkill } from '@/lib/services/corporate-skills'
+import {
+  getCorporateSkillVersionPage,
+  parseSkillVersionPageParams,
+} from '@/lib/services/corporate-skills'
 import { SkillDetailView } from './skill-detail'
 
 interface Props {
   params: Promise<{ slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function SkillDetailPage({ params }: Props) {
+export default async function SkillDetailPage({ params, searchParams }: Props) {
   const cookieStore = await cookies()
   const session = await resolveSession(cookieStore.get('baseline_dashboard_session')?.value)
   if (!session || session.role !== 'admin') redirect('/dashboard')
 
   const { slug } = await params
-  const result = await getCorporateSkill(slug)
+  const versionParams = parseSkillVersionPageParams(await searchParams)
+  const result = await getCorporateSkillVersionPage(slug, versionParams)
   if (!result) notFound()
 
   return (
@@ -43,7 +48,14 @@ export default async function SkillDetailPage({ params }: Props) {
         </p>
       </div>
 
-      <SkillDetailView skill={result.skill} versions={result.versions} />
+      <SkillDetailView
+        skill={result.skill}
+        latestVersion={result.latestVersion}
+        versions={result.versions}
+        versionPage={result.page}
+        versionTotal={result.total}
+        versionTotalPages={result.totalPages}
+      />
     </div>
   )
 }

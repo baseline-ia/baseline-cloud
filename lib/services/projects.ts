@@ -1,7 +1,7 @@
 // Single-process in-memory cache for project enrollment checks.
 // This module assumes exactly one Node instance; if the deployment ever scales
 // horizontally the cache must be replaced with a shared store (Redis, etc.).
-import { eq, inArray, desc } from 'drizzle-orm'
+import { count, desc, eq, ilike, inArray, or } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import { db } from '@/lib/db/client'
 import { projects } from '@/lib/db/schema'
@@ -9,6 +9,43 @@ import { writeAudit } from '@/lib/auth/index'
 
 export type { Project, NewProject } from '@/lib/db/schema'
 import type { Project } from '@/lib/db/schema'
+
+export const ADMIN_PROJECT_PAGE_SIZE = 50
+
+export interface AdminProjectListParams {
+  search: string
+  page: number
+}
+
+export interface AdminProjectList {
+  rows: Project[]
+  total: number
+  page: number
+  totalPages: number
+}
+
+type SearchParams = Record<string, string | string[] | undefined>
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+export function parseAdminProjectListParams(params: SearchParams): AdminProjectListParams {
+  const search = firstParam(params.q)?.trim() ?? ''
+  const parsedPage = Number.parseInt(firstParam(params.page) ?? '1', 10)
+
+  return {
+    search,
+    page: Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1,
+  }
+}
+
+function adminProjectListWhere(search: string) {
+  if (!search) return undefined
+
+  const searchPattern = `%${search}%`
+  return or(ilike(projects.slug, searchPattern), ilike(projects.name, searchPattern))
+}
 
 export class ProjectAlreadyEnrolledError extends Error {
   constructor(public readonly slug: string) {
@@ -115,6 +152,27 @@ export async function checkProjectsEnrolled(
 
 export async function listProjects(): Promise<Project[]> {
   return db.select().from(projects).orderBy(desc(projects.createdAt))
+}
+
+export async function listAdminProjects(
+  params: AdminProjectListParams,
+): Promise<AdminProjectList> {
+  const where = adminProjectListWhere(params.search)
+  const countRows = await db.select({ total: count() }).from(projects).where(where)
+
+  const total = Number(countRows[0]?.total ?? 0)
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_PROJECT_PAGE_SIZE))
+  const page = Math.min(params.page, totalPages)
+
+  const rows = await db
+    .select()
+    .from(projects)
+    .where(where)
+    .orderBy(desc(projects.createdAt))
+    .limit(ADMIN_PROJECT_PAGE_SIZE)
+    .offset((page - 1) * ADMIN_PROJECT_PAGE_SIZE)
+
+  return { rows, total, page, totalPages }
 }
 
 export async function getProject(slug: string): Promise<Project | null> {
