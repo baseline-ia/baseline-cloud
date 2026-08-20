@@ -14,6 +14,7 @@ Self-hosted telemetry dashboard for the [`baseline`](https://github.com/amsinteg
 - 💰 **Per-change ROI**: estimate time at planning time (`--estimate small|medium|large|xlarge|240|4h`); cloud computes actual time (open→close) and shows time saved vs. estimate.
 - 👥 **Admin panel** for user management, token issuance/revocation, and time-baseline configuration.
 - 🧩 **Global corporate skills**: admins manage versioned SKILL.md files in the catalog; every enrolled project receives the latest published versions through the skills API.
+- 🔕 **Per-project skill policy**: admins disable specific skills per project from the Projects panel; the CLI reads the policy on every sync and writes a Kiro steering file that enforces the restriction without executing disabled skills.
 - 🔒 **Audit log** for signups, logins, token issuance/revocation, settings changes.
 - 🗂️ **Project enrollment**: admins control which projects are allowed to send telemetry. Non-enrolled projects receive `403 project_not_enrolled`.
 - 🐳 **Single-command deploy** with `docker compose up -d` (Postgres + cloud service, healthchecks, persistent volume).
@@ -133,7 +134,7 @@ The admin configures per-type baselines in **Dashboard → Admin → Settings** 
 | `POST` | `/api/v1/auth/logout` | — | `{ok}` |
 | `POST` | `/api/v1/events` | `{event_type, project, payload, occurred_at?}` | `{ok, id}` |
 | `POST` | `/api/v1/events/batch` | `{events: [...]}` | `{ok, ids}` |
-| `GET` | `/api/v1/skills?project=<slug>` | — | Global published corporate skills for the enrolled project |
+| `GET` | `/api/v1/skills?project=<slug>` | — | Global published corporate skills for the enrolled project + `policy.skills.disabled[]` listing admin-disabled skill slugs for this project |
 | `GET` | `/api/v1/skills/:slug/verify?project=<slug>` | — | Verify a global skill version and content hash |
 
 ### Dashboard (session cookie)
@@ -151,7 +152,7 @@ The admin configures per-type baselines in **Dashboard → Admin → Settings** 
 | `GET` | `/dashboard/admin/tokens` | Token management (admin) |
 | `GET` | `/dashboard/admin/users` | User management (admin) |
 | `GET` | `/dashboard/admin/settings` | Time baselines (admin) |
-| `GET` | `/dashboard/admin/projects` | Project enrollment (admin) |
+| `GET` | `/dashboard/admin/projects` | Project enrollment + per-project skill policy (admin) |
 | `GET` | `/dashboard/admin/skills` | Global corporate skill catalog (admin) |
 
 ## Architecture
