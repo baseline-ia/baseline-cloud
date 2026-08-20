@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react'
 import type { Project } from '@/lib/db/schema'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import {
   enrollProjectAction,
   disableProjectAction,
@@ -309,7 +310,7 @@ function SkillPolicyForm({
                 visibleSkills.map((skill) => {
                   const isDisabled = draftDisabled.has(skill.slug)
                   return (
-                    <label
+                    <div
                       key={skill.slug}
                       style={{
                         display: 'flex',
@@ -336,20 +337,17 @@ function SkillPolicyForm({
                         <span style={{ color: 'var(--text-muted)' }}>{skill.name}</span>
                       </span>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
-                        <input
-                          type="checkbox"
-                          role="switch"
-                          name="disabled_skill"
-                          value={skill.slug}
+                        <Switch
                           checked={isDisabled}
-                          onChange={() => toggleSkill(skill.slug)}
+                          onCheckedChange={() => toggleSkill(skill.slug)}
                           aria-label={`Disable ${skill.name}`}
                         />
+                        {isDisabled && <input type="hidden" name="disabled_skill" value={skill.slug} />}
                         <span style={{ color: isDisabled ? 'var(--danger)' : 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>
                           {isDisabled ? 'Disabled' : 'Enabled'}
                         </span>
                       </span>
-                    </label>
+                    </div>
                   )
                 })
               )}

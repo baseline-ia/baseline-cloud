@@ -126,13 +126,25 @@ describe('ProjectsForm server-side list controls', () => {
     const selectAll = screen.getByRole('checkbox', { name: 'Disable all skills' })
     const switches = screen.getAllByRole('switch')
 
-    expect((switches[0] as HTMLInputElement).checked).toBe(true)
+    expect(switches[0]).toHaveAttribute('aria-checked', 'true')
     expect((selectAll as HTMLInputElement).indeterminate).toBe(true)
+    expect(document.querySelectorAll('input[type="hidden"][name="disabled_skill"]')).toHaveLength(1)
+    expect(document.querySelector('input[type="hidden"][name="disabled_skill"][value="api-review"]')).toBeInTheDocument()
+
+    await user.click(switches[0])
+    expect(switches[0]).toHaveAttribute('aria-checked', 'false')
+    expect(document.querySelector('input[type="hidden"][name="disabled_skill"][value="api-review"]')).not.toBeInTheDocument()
+
+    await user.click(switches[0])
+    expect(switches[0]).toHaveAttribute('aria-checked', 'true')
+    expect(document.querySelector('input[type="hidden"][name="disabled_skill"][value="api-review"]')).toBeInTheDocument()
 
     await user.click(selectAll)
-    expect(switches.every((switchControl) => (switchControl as HTMLInputElement).checked)).toBe(true)
+    expect(switches.every((switchControl) => switchControl.getAttribute('aria-checked') === 'true')).toBe(true)
+    expect(document.querySelectorAll('input[type="hidden"][name="disabled_skill"]')).toHaveLength(2)
 
     await user.click(selectAll)
-    expect(switches.every((switchControl) => !(switchControl as HTMLInputElement).checked)).toBe(true)
+    expect(switches.every((switchControl) => switchControl.getAttribute('aria-checked') === 'false')).toBe(true)
+    expect(document.querySelectorAll('input[type="hidden"][name="disabled_skill"]')).toHaveLength(0)
   })
 })
