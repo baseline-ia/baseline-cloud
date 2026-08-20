@@ -291,3 +291,36 @@ export async function deleteProject(slug: string, byUserId: string): Promise<voi
 
   invalidate(normalizedSlug)
 }
+
+// ============================================================================
+// getProjectPolicy / setProjectPolicy
+// ============================================================================
+
+export async function getProjectPolicy(slug: string): Promise<{ skills: { disabled: string[] } }> {
+  const normalizedSlug = normalizeSlug(slug)
+  const rows = await db
+    .select({ config: projects.config })
+    .from(projects)
+    .where(eq(projects.slug, normalizedSlug))
+    .limit(1)
+  const config = (rows[0]?.config ?? {}) as { skills?: { disabled?: string[] } }
+  return { skills: { disabled: config?.skills?.disabled ?? [] } }
+}
+
+export async function setProjectPolicy(
+  slug: string,
+  policy: { skills: { disabled: string[] } },
+  byUserId: string,
+): Promise<void> {
+  const normalizedSlug = normalizeSlug(slug)
+  await db
+    .update(projects)
+    .set({ config: policy })
+    .where(eq(projects.slug, normalizedSlug))
+  await writeAudit({
+    actorUserId: byUserId,
+    action: 'project.policy_updated',
+    metadata: { slug: normalizedSlug, disabled: policy.skills.disabled },
+  })
+  invalidate(normalizedSlug)
+}

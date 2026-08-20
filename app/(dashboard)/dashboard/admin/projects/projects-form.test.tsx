@@ -6,6 +6,7 @@ vi.mock('./actions', () => ({
   disableProjectAction: vi.fn(),
   enableProjectAction: vi.fn(),
   deleteProjectAction: vi.fn(),
+  updateProjectPolicyAction: vi.fn(),
 }))
 
 vi.mock('react', async (importOriginal) => {
@@ -24,6 +25,7 @@ function makeProject(slug: string, name = slug): Project {
     slug,
     name,
     enabled: true,
+    config: {},
     createdAt: new Date('2024-01-01T00:00:00Z'),
     createdByUserId: null,
     disabledAt: null,
@@ -36,6 +38,7 @@ describe('ProjectsForm server-side list controls', () => {
     render(
       <ProjectsForm
         projects={[makeProject('api-gateway', 'API Gateway')]}
+        skills={[]}
         search="api"
         page={2}
         total={51}
@@ -57,6 +60,7 @@ describe('ProjectsForm server-side list controls', () => {
     render(
       <ProjectsForm
         projects={[makeProject('alpha')]}
+        skills={[]}
         search=""
         page={1}
         total={1}

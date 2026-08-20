@@ -8,10 +8,14 @@ import {
   disableProjectAction,
   enableProjectAction,
   deleteProjectAction,
+  updateProjectPolicyAction,
 } from './actions'
+
+type SkillSummary = { slug: string; name: string }
 
 interface ProjectsFormProps {
   projects: Project[]
+  skills: SkillSummary[]
   search: string
   page: number
   total: number
@@ -205,7 +209,96 @@ function EnrollForm() {
   )
 }
 
-function ProjectRow({ project }: { project: Project }) {
+function SkillPolicyForm({
+  projectSlug,
+  disabledSlugs,
+  skills,
+}: {
+  projectSlug: string
+  disabledSlugs: string[]
+  skills: SkillSummary[]
+}) {
+  const [state, action, pending] = useActionState(updateProjectPolicyAction, {})
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="slug" value={projectSlug} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        {skills.length === 0 ? (
+          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+            No skills configured yet.
+          </p>
+        ) : (
+          skills.map((skill) => (
+            <label
+              key={skill.slug}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', cursor: 'pointer' }}
+            >
+              <input
+                type="checkbox"
+                name="disabled_skill"
+                value={skill.slug}
+                defaultChecked={disabledSlugs.includes(skill.slug)}
+              />
+              <span>
+                <code
+                  style={{
+                    fontSize: '0.8125rem',
+                    background: 'var(--bg-subtle)',
+                    padding: '0.1rem 0.3rem',
+                    borderRadius: '3px',
+                  }}
+                >
+                  {skill.slug}
+                </code>{' '}
+                <span style={{ color: 'var(--text-muted)' }}>{skill.name}</span>{' '}
+                <span style={{ color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 600 }}>
+                  disabled
+                </span>
+              </span>
+            </label>
+          ))
+        )}
+      </div>
+
+      {state.error && (
+        <p style={{ margin: '0.5rem 0 0', fontSize: '0.8125rem', color: 'var(--danger)', fontWeight: 500 }}>
+          {state.error}
+        </p>
+      )}
+      {state.success && (
+        <p style={{ margin: '0.5rem 0 0', fontSize: '0.8125rem', color: 'var(--success)', fontWeight: 500 }}>
+          Policy saved.
+        </p>
+      )}
+
+      {skills.length > 0 && (
+        <button
+          type="submit"
+          disabled={pending}
+          style={{
+            marginTop: '0.75rem',
+            height: '30px',
+            padding: '0 1rem',
+            background: pending
+              ? 'color-mix(in srgb, var(--cl-primary) 60%, transparent)'
+              : 'var(--cl-primary)',
+            color: 'white',
+            border: 'none',
+            borderRadius: 'var(--cl-radius-sm)',
+            fontWeight: 600,
+            fontSize: '0.8125rem',
+            cursor: pending ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {pending ? 'Saving…' : 'Save Policy'}
+        </button>
+      )}
+    </form>
+  )
+}
+
+function ProjectRow({ project, skills }: { project: Project; skills: SkillSummary[] }) {
   const [disableState, disableAction, disablePending] = useActionState(disableProjectAction, {})
   const [enableState, enableAction, enablePending] = useActionState(enableProjectAction, {})
   const [deleteState, deleteAction, deletePending] = useActionState(deleteProjectAction, {})
@@ -334,11 +427,39 @@ function ProjectRow({ project }: { project: Project }) {
           )}
         </td>
       </tr>
+
+      <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-subtle)' }}>
+        <td colSpan={5} style={{ padding: 0 }}>
+          <details>
+            <summary
+              style={{
+                padding: '0.375rem 1rem',
+                cursor: 'pointer',
+                fontSize: '0.8125rem',
+                color: 'var(--text-muted)',
+                fontWeight: 500,
+                listStyle: 'none',
+              }}
+            >
+              Skills policy
+            </summary>
+            <div style={{ padding: '0.75rem 1rem 1rem' }}>
+              <SkillPolicyForm
+                projectSlug={project.slug}
+                disabledSlugs={
+                  (project.config as { skills?: { disabled?: string[] } })?.skills?.disabled ?? []
+                }
+                skills={skills}
+              />
+            </div>
+          </details>
+        </td>
+      </tr>
     </>
   )
 }
 
-export function ProjectsForm({ projects, search, page, total, totalPages }: ProjectsFormProps) {
+export function ProjectsForm({ projects, skills, search, page, total, totalPages }: ProjectsFormProps) {
   function projectListHref(nextPage: number) {
     const params = new URLSearchParams()
     if (search) params.set('q', search)
@@ -472,7 +593,7 @@ export function ProjectsForm({ projects, search, page, total, totalPages }: Proj
               </tr>
             ) : (
               projects.map((project) => (
-                <ProjectRow key={project.slug} project={project} />
+                <ProjectRow key={project.slug} project={project} skills={skills} />
               ))
             )}
           </tbody>

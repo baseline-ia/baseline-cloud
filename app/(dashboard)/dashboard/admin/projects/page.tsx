@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { resolveSession } from '@/lib/auth'
 import { listAdminProjects, parseAdminProjectListParams } from '@/lib/services/projects'
+import { listCorporateSkills } from '@/lib/services/corporate-skills'
 import { ProjectsForm } from './projects-form'
 
 export default async function ProjectsPage({
@@ -15,7 +16,10 @@ export default async function ProjectsPage({
   if (!session || session.role !== 'admin') redirect('/dashboard')
 
   const listParams = parseAdminProjectListParams(await searchParams)
-  const projectList = await listAdminProjects(listParams)
+  const [projectList, allSkills] = await Promise.all([
+    listAdminProjects(listParams),
+    listCorporateSkills(),
+  ])
 
   return (
     <div>
@@ -29,6 +33,7 @@ export default async function ProjectsPage({
 
       <ProjectsForm
         projects={projectList.rows}
+        skills={allSkills}
         search={listParams.search}
         page={projectList.page}
         total={projectList.total}

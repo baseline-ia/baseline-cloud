@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { resolveBearerToken } from '@/lib/auth'
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit'
-import { normalizeSlug } from '@/lib/services/projects'
+import { normalizeSlug, getProjectPolicy } from '@/lib/services/projects'
 import {
   getAssignmentsForProject,
   createCorporateSkill,
@@ -56,7 +56,10 @@ export async function GET(req: NextRequest) {
   // Step 4: Fetch all corporate skills (globally delivered — no enrollment required)
   const skills = await getAssignmentsForProject(slug)
 
-  return NextResponse.json({ ok: true, skills }, { status: 200 })
+  // Step 5: Fetch per-project skill policy (disabled skills set by admin)
+  const policy = await getProjectPolicy(slug)
+
+  return NextResponse.json({ ok: true, skills, policy }, { status: 200 })
 }
 
 const CreateSkillBody = z.object({

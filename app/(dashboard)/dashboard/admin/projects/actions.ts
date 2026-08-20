@@ -10,6 +10,7 @@ import {
   disableProject,
   enableProject,
   deleteProject,
+  setProjectPolicy,
 } from '@/lib/services/projects'
 
 const PROJECTS_PATH = '/dashboard/admin/projects'
@@ -114,6 +115,30 @@ export async function deleteProjectAction(
     await deleteProject(slug, session.userId)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to delete project.'
+    return { error: message }
+  }
+
+  revalidatePath(PROJECTS_PATH)
+  return { success: true }
+}
+
+export async function updateProjectPolicyAction(
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  const session = await requireAdmin()
+
+  const slug = (formData.get('slug') as string | null)?.trim() ?? ''
+  if (!slug) return { error: 'Slug is required.' }
+
+  const disabled = formData
+    .getAll('disabled_skill')
+    .filter((v): v is string => typeof v === 'string')
+
+  try {
+    await setProjectPolicy(slug, { skills: { disabled } }, session.userId)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to update policy.'
     return { error: message }
   }
 

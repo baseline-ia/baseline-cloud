@@ -163,6 +163,7 @@ export const projects = pgTable(
     slug: text('slug').primaryKey(),
     name: text('name').notNull(),
     enabled: boolean('enabled').notNull().default(true),
+    config: jsonb('config').notNull().default({}).$type<{ skills?: { disabled?: string[] } }>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
     disabledAt: timestamp('disabled_at', { withTimezone: true }),
