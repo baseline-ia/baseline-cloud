@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect } from 'vitest'
 
 vi.mock('./actions', () => ({
@@ -70,5 +71,68 @@ describe('ProjectsForm server-side list controls', () => {
 
     expect(document.querySelector('input[type="hidden"][name="slug"][value="alpha"]')).toBeInTheDocument()
     expect(screen.queryByText('No projects found')).not.toBeInTheDocument()
+  })
+
+  it('opens a project policy aside and filters skills locally', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <ProjectsForm
+        projects={[makeProject('alpha', 'Alpha Project')]}
+        skills={[
+          { slug: 'api-review', name: 'API review' },
+          { slug: 'release-notes', name: 'Release notes' },
+        ]}
+        search=""
+        page={1}
+        total={1}
+        totalPages={1}
+      />,
+    )
+
+    expect(screen.queryByRole('heading', { name: 'Alpha Project' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Skills policy' }))
+
+    expect(screen.getByRole('heading', { name: 'Alpha Project' })).toBeInTheDocument()
+    expect(screen.getByText('Showing 2 of 2 skills')).toBeInTheDocument()
+
+    await user.type(screen.getByRole('searchbox', { name: 'Filter skills by slug or name' }), 'release')
+
+    expect(screen.getByText('release-notes')).toBeInTheDocument()
+    expect(screen.queryByText('api-review')).not.toBeInTheDocument()
+    expect(screen.getByText('Showing 1 of 2 skills')).toBeInTheDocument()
+  })
+
+  it('controls skill switches and disables or enables the full policy scope', async () => {
+    const user = userEvent.setup()
+    const project = makeProject('alpha')
+    project.config = { skills: { disabled: ['api-review'] } }
+
+    render(
+      <ProjectsForm
+        projects={[project]}
+        skills={[
+          { slug: 'api-review', name: 'API review' },
+          { slug: 'release-notes', name: 'Release notes' },
+        ]}
+        search=""
+        page={1}
+        total={1}
+        totalPages={1}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Skills policy' }))
+    const selectAll = screen.getByRole('checkbox', { name: 'Disable all skills' })
+    const switches = screen.getAllByRole('switch')
+
+    expect((switches[0] as HTMLInputElement).checked).toBe(true)
+    expect((selectAll as HTMLInputElement).indeterminate).toBe(true)
+
+    await user.click(selectAll)
+    expect(switches.every((switchControl) => (switchControl as HTMLInputElement).checked)).toBe(true)
+
+    await user.click(selectAll)
+    expect(switches.every((switchControl) => !(switchControl as HTMLInputElement).checked)).toBe(true)
   })
 })
