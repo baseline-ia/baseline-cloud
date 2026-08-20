@@ -35,6 +35,8 @@ docker compose -f docker/docker-compose.yml up -d postgres
 # 4. Run migrations (one-time, then on every schema change)
 npm run db:migrate
 
+# Skills seed automatically on first start — no manual step needed
+
 # 5. Start the dev server
 npm run dev
 # → http://localhost:3000
@@ -185,6 +187,7 @@ npm run lint         # ESLint
 npm run db:generate  # Generate a new migration after schema changes
 npm run db:migrate   # Apply pending migrations
 npm run db:seed      # Seed demo data (dev only)
+npm run db:seed-skills  # Seed the 27 baseline skills (runs automatically on startup)
 ```
 
 ## Project status

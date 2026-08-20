@@ -287,7 +287,7 @@ export async function createCorporateSkill(
     tool?: string | null
     failClosed?: boolean
   },
-  byUserId: string,
+  byUserId: string | null,
 ): Promise<CorporateSkill> {
   if (!SKILL_SLUG_RE.test(input.slug)) {
     throw new Error(
@@ -331,7 +331,7 @@ export async function createCorporateSkill(
 export async function publishSkillVersion(
   skillId: string,
   content: string,
-  byUserId: string,
+  byUserId: string | null,
 ): Promise<CorporateSkillVersion> {
   const contentHash = createHash('sha256').update(content).digest('hex')
 
@@ -446,7 +446,7 @@ export async function updateCorporateSkillMetadata(
     tool?: string | null
     failClosed?: boolean
   },
-  byUserId: string,
+  byUserId: string | null,
 ): Promise<CorporateSkill> {
   const rows = await db
     .update(corporateSkills)
@@ -469,4 +469,58 @@ export async function updateCorporateSkillMetadata(
   })
 
   return rows[0]
+}
+
+// ============================================================================
+// upsertCorporateSkill
+// ============================================================================
+
+export interface UpsertSkillResult {
+  slug: string
+  action: 'created' | 'updated' | 'skipped'
+  version: number
+}
+
+export async function upsertCorporateSkill(
+  input: {
+    slug: string
+    name: string
+    description?: string | null
+    tool?: string | null
+    content: string
+  },
+  byUserId: string | null,
+): Promise<UpsertSkillResult> {
+  const contentHash = createHash('sha256').update(input.content).digest('hex')
+
+  const existing = await db
+    .select()
+    .from(corporateSkills)
+    .where(eq(corporateSkills.slug, input.slug))
+    .limit(1)
+
+  if (existing.length === 0) {
+    const skill = await createCorporateSkill(
+      { slug: input.slug, name: input.name, description: input.description ?? null, tool: input.tool ?? null, failClosed: false },
+      byUserId,
+    )
+    const ver = await publishSkillVersion(skill.id, input.content, byUserId)
+    return { slug: input.slug, action: 'created', version: ver.version }
+  }
+
+  const skillId = existing[0].id
+
+  const latest = await db
+    .select({ contentHash: corporateSkillVersions.contentHash, version: corporateSkillVersions.version })
+    .from(corporateSkillVersions)
+    .where(eq(corporateSkillVersions.skillId, skillId))
+    .orderBy(desc(corporateSkillVersions.version))
+    .limit(1)
+
+  if (latest.length > 0 && latest[0].contentHash === contentHash) {
+    return { slug: input.slug, action: 'skipped', version: latest[0].version }
+  }
+
+  const ver = await publishSkillVersion(skillId, input.content, byUserId)
+  return { slug: input.slug, action: 'updated', version: ver.version }
 }

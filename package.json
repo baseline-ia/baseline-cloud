@@ -9,7 +9,8 @@
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx lib/db/migrate.ts",
-    "db:seed": "tsx scripts/seed-demo.ts"
+    "db:seed": "tsx scripts/seed-demo.ts",
+    "db:seed-skills": "tsx lib/db/seed-skills-cli.ts"
   },
   "dependencies": {
     "@baseline-ia/baseline-cloud-client": "^0.1.3",
