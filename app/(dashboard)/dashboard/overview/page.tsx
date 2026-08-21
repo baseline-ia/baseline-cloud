@@ -1,13 +1,16 @@
 import { Clock, TrendingUp, Users, Activity, LayoutDashboard } from 'lucide-react';
 import {
   getRoiSummary,
-  getOverviewStats,
-  getEventsPerDay,
-  getTimeAggregates,
+  getOverviewStatsForRange,
+  getEventsPerDayForRange,
+  getTimeAggregatesForRange,
+  dateRangeFromDays,
+  type DateRange,
 } from '@/lib/services/metrics';
 import { KpiCard } from '@/components/dashboard/kpi-card';
 import { ActivityChart } from '@/components/dashboard/activity-chart';
 import { WorktypeChart } from '@/components/dashboard/worktype-chart';
+import { DateRangePicker } from './date-range-picker';
 
 function formatMs(ms: number): string {
   const totalMin = ms / 60_000;
@@ -18,15 +21,48 @@ function formatMs(ms: number): string {
   return `${h}h ${m}m`;
 }
 
-export default async function OverviewPage() {
+function parseRange(searchParams: Record<string, string | string[] | undefined>): DateRange {
+  const fromStr = typeof searchParams.from === 'string' ? searchParams.from : null;
+  const toStr = typeof searchParams.to === 'string' ? searchParams.to : null;
+
+  if (fromStr && toStr) {
+    const from = new Date(`${fromStr}T00:00:00.000Z`);
+    const to = new Date(`${toStr}T23:59:59.999Z`);
+    if (!isNaN(from.getTime()) && !isNaN(to.getTime()) && from <= to) {
+      return { from, to };
+    }
+  }
+  return dateRangeFromDays(30);
+}
+
+function formatRangeLabel(range: DateRange): string {
+  const days = Math.round((range.to.getTime() - range.from.getTime()) / (24 * 60 * 60 * 1000));
+  if (days <= 7) return 'Last 7 days';
+  if (days <= 14) return 'Last 14 days';
+  if (days <= 30) return 'Last 30 days';
+  if (days <= 60) return 'Last 60 days';
+  if (days <= 90) return 'Last 90 days';
+  return `${range.from.toISOString().slice(0, 10)} — ${range.to.toISOString().slice(0, 10)}`;
+}
+
+interface OverviewPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function OverviewPage({ searchParams }: OverviewPageProps) {
+  const params = await searchParams;
+  const range = parseRange(params);
+
   const [roi, stats, eventsPerDay, timeAgg] = await Promise.all([
     getRoiSummary(),
-    getOverviewStats(),
-    getEventsPerDay(30),
-    getTimeAggregates(30),
+    getOverviewStatsForRange(range),
+    getEventsPerDayForRange(range),
+    getTimeAggregatesForRange(range),
   ]);
 
   const maxProjectMs = timeAgg.byProject[0]?.totalMs ?? 1;
+  const fromStr = range.from.toISOString().slice(0, 10);
+  const toStr = range.to.toISOString().slice(0, 10);
 
   return (
     <div>
@@ -57,18 +93,18 @@ export default async function OverviewPage() {
           grid-template-columns: 1fr;
           gap: 1.5rem;
         }
-        @media (max-width: 900px) {
-          .overview-bottom-grid { grid-template-columns: 1fr; }
-        }
       `}</style>
 
-      {/* Page header */}
-      <div className="page-header">
-        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <LayoutDashboard size={22} />
-          Overview
-        </h1>
-        <p className="subtitle">Last 30 days</p>
+      {/* Page header with date range picker */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <LayoutDashboard size={22} />
+            Overview
+          </h1>
+          <p className="subtitle">{formatRangeLabel(range)}</p>
+        </div>
+        <DateRangePicker from={fromStr} to={toStr} />
       </div>
 
       {/* KPI row */}
@@ -90,14 +126,14 @@ export default async function OverviewPage() {
         <KpiCard
           label="Active Devs"
           value={stats.activeDevsLast7d}
-          sublabel="last 7 days"
+          sublabel="in range"
           icon={<Users size={20} />}
           accent="primary"
         />
         <KpiCard
           label="Total Events"
-          value={stats.totalEventsLast30d}
-          sublabel="last 30 days"
+          value={stats.totalEvents}
+          sublabel="in range"
           icon={<Activity size={20} />}
           accent="primary"
         />
@@ -115,14 +151,7 @@ export default async function OverviewPage() {
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <p
-            style={{
-              margin: '0 0 1rem',
-              fontWeight: 600,
-              fontSize: '1.0625rem',
-              color: 'var(--text)',
-            }}
-          >
+          <p style={{ margin: '0 0 1rem', fontWeight: 600, fontSize: '1.0625rem', color: 'var(--text)' }}>
             Daily Activity
           </p>
           <ActivityChart data={eventsPerDay} height={240} />
@@ -138,23 +167,15 @@ export default async function OverviewPage() {
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <p
-            style={{
-              margin: '0 0 1rem',
-              fontWeight: 600,
-              fontSize: '1.0625rem',
-              color: 'var(--text)',
-            }}
-          >
+          <p style={{ margin: '0 0 1rem', fontWeight: 600, fontSize: '1.0625rem', color: 'var(--text)' }}>
             By Work Type
           </p>
           <WorktypeChart data={roi.byWorkType} height={240} />
         </div>
       </div>
 
-      {/* Bottom row */}
+      {/* Bottom row — Top Projects */}
       <div className="overview-bottom-grid">
-        {/* Top Projects */}
         <div
           style={{
             background: 'var(--bg-elevated)',
@@ -164,14 +185,7 @@ export default async function OverviewPage() {
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <p
-            style={{
-              margin: '0 0 1rem',
-              fontWeight: 600,
-              fontSize: '1.0625rem',
-              color: 'var(--text)',
-            }}
-          >
+          <p style={{ margin: '0 0 1rem', fontWeight: 600, fontSize: '1.0625rem', color: 'var(--text)' }}>
             Top Projects
           </p>
           {timeAgg.byProject.length === 0 ? (
@@ -182,46 +196,15 @@ export default async function OverviewPage() {
                 const pct = Math.round((proj.totalMs / maxProjectMs) * 100);
                 return (
                   <div key={proj.key}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '0.25rem',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: '0.9375rem',
-                          fontWeight: 500,
-                          color: 'var(--text)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '70%',
-                        }}
-                      >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.9375rem', fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>
                         {proj.key}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '0.8125rem',
-                          color: 'var(--text-muted)',
-                          flexShrink: 0,
-                          marginLeft: '0.5rem',
-                        }}
-                      >
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', flexShrink: 0, marginLeft: '0.5rem' }}>
                         {formatMs(proj.totalMs)}
                       </span>
                     </div>
-                    <div
-                      style={{
-                        height: '6px',
-                        background: 'var(--bg-subtle)',
-                        borderRadius: '3px',
-                        overflow: 'hidden',
-                      }}
-                    >
+                    <div style={{ height: '6px', background: 'var(--bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
                       <div
                         style={{
                           height: '100%',

@@ -1,4 +1,4 @@
-import { and, count, countDistinct, desc, eq, gte, ilike, or, sql, asc } from 'drizzle-orm';
+import { and, count, countDistinct, desc, eq, gte, lte, ilike, or, sql, asc } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { events, users, settings } from '@/lib/db/schema';
 
@@ -6,6 +6,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function sinceMs(days: number): Date {
   return new Date(Date.now() - days * DAY_MS);
+}
+
+export interface DateRange {
+  from: Date;
+  to: Date;
+}
+
+export function dateRangeFromDays(days: number): DateRange {
+  return { from: sinceMs(days), to: new Date() };
+}
+
+function rangeCondition(range: DateRange) {
+  return and(gte(events.occurredAt, range.from), lte(events.occurredAt, range.to));
 }
 
 export interface OverviewStats {
@@ -1050,5 +1063,135 @@ export async function getSkillAdoptionPage(
     total,
     page,
     totalPages,
+  };
+}
+
+
+// ---------------------------------------------------------------------------
+// Range-based variants for dashboard date picker
+// ---------------------------------------------------------------------------
+
+export async function getOverviewStatsForRange(range: DateRange): Promise<OverviewStats> {
+  const rangeWhere = rangeCondition(range);
+  const totalRow = (await db.select({ c: count() }).from(events).where(rangeWhere))[0];
+  const activeDevsRow = (
+    await db
+      .select({ c: countDistinct(events.userId) })
+      .from(events)
+      .where(rangeWhere)
+  )[0];
+  const totalDevsRow = (await db.select({ c: count() }).from(users))[0];
+
+  const topTypes = await db
+    .select({ eventType: events.eventType, c: count() })
+    .from(events)
+    .where(rangeWhere)
+    .groupBy(events.eventType)
+    .orderBy(sql`count(*) desc`)
+    .limit(5);
+
+  const topProjects = await db
+    .select({ project: events.project, c: count() })
+    .from(events)
+    .where(rangeWhere)
+    .groupBy(events.project)
+    .orderBy(sql`count(*) desc`)
+    .limit(5);
+
+  const errRow = (
+    await db
+      .select({ c: count() })
+      .from(events)
+      .where(
+        and(
+          rangeWhere,
+          sql`(${events.payload}->>'success')::boolean = false`,
+        ),
+      )
+  )[0];
+
+  const totalInRange = totalRow?.c ?? 0;
+  const err = errRow?.c ?? 0;
+  const errorRate = totalInRange > 0 ? (err / totalInRange) * 100 : 0;
+
+  return {
+    totalEvents: totalInRange,
+    totalEventsLast7d: totalInRange,
+    totalEventsLast30d: totalInRange,
+    activeDevsLast24h: activeDevsRow?.c ?? 0,
+    activeDevsLast7d: activeDevsRow?.c ?? 0,
+    totalDevs: totalDevsRow?.c ?? 0,
+    topEventTypes: topTypes.map((r) => ({ eventType: r.eventType, count: r.c })),
+    topProjects: topProjects.map((r) => ({ project: r.project, count: r.c })),
+    errorRate: Math.round(errorRate * 10) / 10,
+  };
+}
+
+export async function getEventsPerDayForRange(range: DateRange): Promise<DayPoint[]> {
+  const rangeWhere = rangeCondition(range);
+  const dayExpr = sql<string>`to_char(${events.occurredAt} AT TIME ZONE 'UTC', 'YYYY-MM-DD')`;
+  const rows = await db
+    .select({ day: dayExpr, c: count() })
+    .from(events)
+    .where(rangeWhere)
+    .groupBy(dayExpr)
+    .orderBy(dayExpr);
+
+  const map = new Map(rows.map((r) => [r.day, Number(r.c)]));
+  const out: DayPoint[] = [];
+  const days = Math.max(1, Math.ceil((range.to.getTime() - range.from.getTime()) / DAY_MS));
+  for (let i = 0; i < days; i++) {
+    const d = new Date(range.from.getTime() + i * DAY_MS);
+    const key = d.toISOString().slice(0, 10);
+    out.push({ date: key, count: map.get(key) ?? 0 });
+  }
+  return out;
+}
+
+export async function getTimeAggregatesForRange(range: DateRange): Promise<TimeAggregates> {
+  const rangeWhere = rangeCondition(range);
+
+  const opens = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.eventType, 'change.open'), rangeWhere));
+
+  const closes = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.eventType, 'change.close'), rangeWhere));
+
+  const workTypeByChange = new Map<string, string>();
+  for (const o of opens) {
+    const name = (o.payload as { changeName?: string }).changeName;
+    const wt = (o.payload as { workType?: string }).workType;
+    if (name && wt) workTypeByChange.set(name, wt);
+  }
+
+  const records: Array<{ workType: string; project: string; username: string; durationMs: number }> = [];
+  for (const c of closes) {
+    const payload = c.payload as { changeName?: string; durationMs?: number };
+    const name = payload.changeName;
+    if (!name) continue;
+    records.push({
+      workType: workTypeByChange.get(name) ?? 'unknown',
+      project: c.project,
+      username: c.username,
+      durationMs: payload.durationMs ?? 0,
+    });
+  }
+
+  const totalMs = records.reduce((s, r) => s + r.durationMs, 0);
+  const byProject = groupSum(records, (r) => r.project, (r) => r.durationMs);
+  const byDeveloper = groupSum(records, (r) => r.username, (r) => r.durationMs);
+  const byWorkType = groupSum(records, (r) => r.workType, (r) => r.durationMs);
+
+  return {
+    totalMs,
+    closedChanges: closes.length,
+    byProject: byProject.sort((a, b) => b.totalMs - a.totalMs),
+    byDeveloper: byDeveloper.sort((a, b) => b.totalMs - a.totalMs),
+    byWorkType: byWorkType.sort((a, b) => b.totalMs - a.totalMs),
+    projectCount: new Set(records.map((r) => r.project)).size,
   };
 }
