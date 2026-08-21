@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   BASE_COLORS,
   ACCENT_COLORS,
@@ -47,7 +49,6 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
     const config = loadPalette();
     applyPalette(config);
 
-    // Watch for theme (light/dark) changes to reapply
     const observer = new MutationObserver(() => {
       const config = loadPalette();
       applyPalette(config);
@@ -60,7 +61,7 @@ export function ThemePaletteProvider({ children }: { children: React.ReactNode }
 }
 
 // ---------------------------------------------------------------------------
-// Picker UI (for admin/settings page)
+// Picker UI
 // ---------------------------------------------------------------------------
 
 export function ThemePalettePicker() {
@@ -78,116 +79,95 @@ export function ThemePalettePicker() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="space-y-6">
       {/* Base Color */}
-      <div>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
-          Base Color
-        </p>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <PickerSection title="Base Color">
+        <div className="flex flex-wrap gap-2">
           {BASE_COLORS.map((base) => (
             <button
               key={base.id}
               onClick={() => update({ base: base.id })}
-              title={base.label}
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: base.light.bgElevated,
-                border: config.base === base.id
-                  ? '2px solid var(--cl-primary)'
-                  : `2px solid ${base.light.border}`,
-                cursor: 'pointer',
-                position: 'relative',
-                overflow: 'hidden',
-                boxShadow: config.base === base.id ? '0 0 0 2px var(--cl-primary-soft)' : 'none',
-              }}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] px-3 py-1.5 text-xs font-medium transition-all',
+                config.base === base.id
+                  ? 'bg-[var(--text)] text-[var(--bg-elevated)] border-[var(--text)]'
+                  : 'bg-[var(--bg-elevated)] text-[var(--text)] hover:bg-[var(--bg-subtle)]'
+              )}
             >
-              <span style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '50%',
-                background: base.dark.bg,
-              }} />
+              <span
+                className="w-3.5 h-3.5 rounded-full border border-border/50 shadow-sm"
+                style={{ background: base.light.bgSubtle }}
+              />
+              {base.label}
+              {config.base === base.id && <Check size={12} />}
             </button>
           ))}
         </div>
-      </div>
+      </PickerSection>
 
       {/* Accent Color */}
-      <div>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
-          Accent Color
-        </p>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <PickerSection title="Accent Color">
+        <div className="flex flex-wrap gap-2">
           {ACCENT_COLORS.map((accent) => (
             <button
               key={accent.id}
               onClick={() => update({ accent: accent.id })}
-              title={accent.label}
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: accent.light.primary,
-                border: config.accent === accent.id
-                  ? '3px solid var(--text)'
-                  : '2px solid transparent',
-                cursor: 'pointer',
-                boxShadow: config.accent === accent.id ? '0 0 0 2px var(--cl-primary-soft)' : 'none',
-              }}
-            />
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] px-3 py-1.5 text-xs font-medium transition-all',
+                config.accent === accent.id
+                  ? 'bg-[var(--text)] text-[var(--bg-elevated)] border-[var(--text)]'
+                  : 'bg-[var(--bg-elevated)] text-[var(--text)] hover:bg-[var(--bg-subtle)]'
+              )}
+            >
+              <span
+                className="w-3.5 h-3.5 rounded-full shadow-sm"
+                style={{ background: accent.light.primary }}
+              />
+              {accent.label}
+              {config.accent === accent.id && <Check size={12} />}
+            </button>
           ))}
         </div>
-      </div>
+      </PickerSection>
 
       {/* Chart Palette */}
-      <div>
-        <p style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
-          Chart Palette
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <PickerSection title="Chart Colors">
+        <div className="flex flex-wrap gap-2">
           {CHART_PALETTES.map((palette) => (
             <button
               key={palette.id}
               onClick={() => update({ chart: palette.id })}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.75rem',
-                padding: '0.5rem 0.75rem',
-                borderRadius: 'var(--cl-radius-sm)',
-                border: config.chart === palette.id
-                  ? '2px solid var(--cl-primary)'
-                  : '1px solid var(--border-color)',
-                background: config.chart === palette.id ? 'var(--cl-primary-soft)' : 'var(--bg-elevated)',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-full border border-[var(--border-color)] px-3 py-1.5 text-xs font-medium transition-all',
+                config.chart === palette.id
+                  ? 'bg-[var(--text)] text-[var(--bg-elevated)] border-[var(--text)]'
+                  : 'bg-[var(--bg-elevated)] text-[var(--text)] hover:bg-[var(--bg-subtle)]'
+              )}
             >
-              <div style={{ display: 'flex', gap: '3px' }}>
-                {palette.colors.slice(0, 6).map((color, i) => (
-                  <div
+              <span className="inline-flex gap-[2px]">
+                {palette.colors.slice(0, 4).map((color, i) => (
+                  <span
                     key={i}
-                    style={{
-                      width: '14px',
-                      height: '14px',
-                      borderRadius: '3px',
-                      background: color,
-                    }}
+                    className="w-2 h-3.5 rounded-[2px]"
+                    style={{ background: color }}
                   />
                 ))}
-              </div>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--text)', fontWeight: 500 }}>
-                {palette.label}
               </span>
+              {palette.label}
+              {config.chart === palette.id && <Check size={12} />}
             </button>
           ))}
         </div>
-      </div>
+      </PickerSection>
+    </div>
+  );
+}
+
+function PickerSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2.5">
+      <h3 className="text-sm font-medium text-[var(--text-muted)]">{title}</h3>
+      {children}
     </div>
   );
 }

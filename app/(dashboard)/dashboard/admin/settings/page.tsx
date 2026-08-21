@@ -7,6 +7,7 @@ import { getBrandingLogo } from '@/lib/services/branding'
 import { SettingsForm } from './settings-form'
 import { LogoUploadForm } from './logo-upload-form'
 import { ThemePalettePicker } from '@/components/layout/theme-palette-picker'
+import { SettingsShell } from './settings-shell'
 
 export default async function SettingsPage() {
   const cookieStore = await cookies()
@@ -25,70 +26,56 @@ export default async function SettingsPage() {
         <p className="subtitle">Workspace-level configuration.</p>
       </div>
 
-      {/* Branding */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--cl-radius)',
-          padding: '1.25rem 1.5rem',
-          boxShadow: 'var(--shadow-sm)',
-          marginBottom: '1.5rem',
-        }}
-      >
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.25rem' }}>
-            Logo
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
-            Upload a custom logo to replace the default in the sidebar.
-          </p>
-        </div>
-        <LogoUploadForm currentLogo={logo} />
+      <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-elevated)] p-6 shadow-sm transition-colors duration-200">
+          <SettingsShell>
+            {{
+              branding: (
+                <SettingsSection
+                  title="Logo"
+                  description="Upload a custom logo to replace the default in the sidebar."
+                >
+                  <LogoUploadForm currentLogo={logo} />
+                </SettingsSection>
+              ),
+              baselines: (
+                <SettingsSection
+                  title="Time Baselines"
+                  description="Default estimated minutes per work type when no per-change estimate is provided."
+                >
+                  <SettingsForm baselines={baselines} />
+                </SettingsSection>
+              ),
+              theme: (
+                <SettingsSection
+                  title="Theme Palette"
+                  description="Customize base color, accent color, and chart palette. Saved per browser."
+                >
+                  <ThemePalettePicker />
+                </SettingsSection>
+              ),
+            }}
+          </SettingsShell>
       </div>
+    </div>
+  )
+}
 
-      {/* Time Baselines */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--cl-radius)',
-          padding: '1.25rem 1.5rem',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.25rem' }}>
-            Time Baselines (minutes)
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
-            Default estimated time per work type when no per-change estimate is provided.
-          </p>
-        </div>
-        <SettingsForm baselines={baselines} />
+function SettingsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
+        <p className="text-sm text-muted-foreground mt-1">{description}</p>
       </div>
-
-      {/* Theme Palette */}
-      <div
-        style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-color)',
-          borderRadius: 'var(--cl-radius)',
-          padding: '1.25rem 1.5rem',
-          boxShadow: 'var(--shadow-sm)',
-          marginTop: '1.5rem',
-        }}
-      >
-        <div style={{ marginBottom: '1.25rem' }}>
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.25rem' }}>
-            Theme Palette
-          </h2>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
-            Customize base color, accent color, and chart palette. Saved per browser.
-          </p>
-        </div>
-        <ThemePalettePicker />
-      </div>
+      <div>{children}</div>
     </div>
   )
 }

@@ -1,0 +1,7 @@
+{
+  "skill_id": "test-probe",
+  "version": 1,
+  "sha256": "47d1c01107d3c18b1cce8fdf6498ad3ee227e78fb49e850c68e256558ba814d1",
+  "fail_closed": false,
+  "synced_at": "2026-08-21T08:03:03.847Z"
+}

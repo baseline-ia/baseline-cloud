@@ -2,23 +2,14 @@
 
 import { useActionState } from 'react'
 import { updateBaselinesAction } from './actions'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 
 const WORK_TYPES = ['feature', 'migration', 'new-project', 'chore', 'fix', 'refactor', 'docs'] as const
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' ')
-}
-
-const inputStyle: React.CSSProperties = {
-  height: '36px',
-  padding: '0 0.75rem',
-  border: '1px solid var(--border-color)',
-  borderRadius: 'var(--cl-radius-sm)',
-  fontSize: '0.9375rem',
-  color: 'var(--text)',
-  background: 'var(--bg-subtle)',
-  outline: 'none',
-  width: '100%',
 }
 
 interface SettingsFormProps {
@@ -29,89 +20,45 @@ export function SettingsForm({ baselines }: SettingsFormProps) {
   const [state, action, pending] = useActionState(updateBaselinesAction, {})
 
   return (
-    <form action={action} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-          gap: '1rem',
-        }}
-      >
+    <form action={action} className="space-y-6">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
         {WORK_TYPES.map((wt) => (
-          <div key={wt} style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label
-              htmlFor={`baseline-${wt}`}
-              style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}
-            >
-              {capitalize(wt)}
-            </label>
-            <input
-              id={`baseline-${wt}`}
-              name={wt}
-              type="number"
-              min={1}
-              step={1}
-              required
-              defaultValue={baselines[wt] ?? 60}
-              style={inputStyle}
-            />
+          <div key={wt} className="space-y-2">
+            <Label htmlFor={`baseline-${wt}`}>{capitalize(wt)}</Label>
+            <div className="relative">
+              <Input
+                id={`baseline-${wt}`}
+                name={wt}
+                type="number"
+                min={1}
+                step={1}
+                required
+                defaultValue={baselines[wt] ?? 60}
+                className="pr-10"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                min
+              </span>
+            </div>
           </div>
         ))}
       </div>
 
       {state.error && (
-        <p
-          style={{
-            margin: 0,
-            padding: '0.5rem 0.75rem',
-            background: 'var(--danger-soft)',
-            color: 'var(--danger)',
-            borderRadius: 'var(--cl-radius-sm)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-          }}
-        >
+        <div className="rounded-md bg-destructive/10 text-destructive text-sm font-medium px-3 py-2">
           {state.error}
-        </p>
+        </div>
       )}
 
       {state.success && (
-        <p
-          style={{
-            margin: 0,
-            padding: '0.5rem 0.75rem',
-            background: 'var(--success-soft)',
-            color: 'var(--success)',
-            borderRadius: 'var(--cl-radius-sm)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-          }}
-        >
+        <div className="rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-medium px-3 py-2">
           Settings saved successfully.
-        </p>
+        </div>
       )}
 
-      <div>
-        <button
-          type="submit"
-          disabled={pending}
-          style={{
-            height: '36px',
-            padding: '0 1.25rem',
-            background: pending
-              ? 'color-mix(in srgb, var(--cl-primary) 60%, transparent)'
-              : 'var(--cl-primary)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 'var(--cl-radius-sm)',
-            fontWeight: 600,
-            fontSize: '0.9375rem',
-            cursor: pending ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {pending ? 'Saving…' : 'Save Changes'}
-        </button>
-      </div>
+      <Button type="submit" disabled={pending}>
+        {pending ? 'Saving…' : 'Save Changes'}
+      </Button>
     </form>
   )
 }

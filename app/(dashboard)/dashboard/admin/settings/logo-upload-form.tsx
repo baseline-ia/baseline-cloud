@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { Upload, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { uploadLogoAction, removeLogoAction } from './logo-actions'
 
 interface LogoUploadFormProps {
@@ -56,74 +57,45 @@ export function LogoUploadForm({ currentLogo }: LogoUploadFormProps) {
   return (
     <div>
       {preview ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 'var(--cl-radius-sm)',
-              overflow: 'hidden',
-              border: '1px solid var(--border-color)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--bg-subtle)',
-            }}
-          >
-            <img src={preview} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-md overflow-hidden border flex items-center justify-center bg-muted/50">
+            <img src={preview} alt="Logo" className="max-w-full max-h-full object-contain" />
           </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text)' }}>{filename}</p>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{filename}</p>
+            <p className="text-xs text-muted-foreground">
               {saving ? 'Saving...' : 'Active'}
             </p>
           </div>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRemove}
             disabled={saving}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              padding: '0.375rem 0.75rem',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--cl-radius-sm)',
-              background: 'transparent',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              fontSize: '0.8125rem',
-            }}
           >
             <Trash2 size={14} />
             Remove
-          </button>
+          </Button>
         </div>
       ) : (
         <div
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          style={{
-            border: '2px dashed var(--border-color)',
-            borderRadius: 'var(--cl-radius)',
-            padding: '2rem',
-            textAlign: 'center',
-            cursor: 'pointer',
-            transition: 'border-color 0.15s ease',
-          }}
+          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors hover:border-primary/50 hover:bg-accent/50"
         >
-          <Upload size={24} style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }} />
-          <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+          <Upload size={24} className="mx-auto text-muted-foreground mb-2" aria-hidden />
+          <p className="text-sm text-muted-foreground">
             Drop your logo here or click to upload
           </p>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
+          <p className="text-xs text-muted-foreground/70 mt-1">
             PNG, SVG, or JPG — max 512KB
           </p>
           <input
             ref={inputRef}
             type="file"
             accept="image/*"
-            style={{ display: 'none' }}
+            className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) handleFile(file)
@@ -132,7 +104,9 @@ export function LogoUploadForm({ currentLogo }: LogoUploadFormProps) {
         </div>
       )}
       {error && (
-        <p style={{ color: 'var(--danger, #ef4444)', fontSize: '0.8125rem', margin: '0.5rem 0 0' }}>{error}</p>
+        <div className="rounded-md bg-destructive/10 text-destructive text-sm font-medium px-3 py-2 mt-3">
+          {error}
+        </div>
       )}
     </div>
   )
