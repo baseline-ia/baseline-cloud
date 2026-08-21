@@ -675,6 +675,7 @@ export async function listChanges(): Promise<ChangeRecord[]> {
   }
 
   const records: ChangeRecord[] = [];
+  const seenChanges = new Set<string>();
   for (const o of opens) {
     const payload = o.payload as {
       changeName?: string;
@@ -686,6 +687,8 @@ export async function listChanges(): Promise<ChangeRecord[]> {
     };
     const name = payload.changeName;
     if (!name) continue;
+    if (seenChanges.has(name)) continue;
+    seenChanges.add(name);
     const workType = payload.workType ?? 'feature';
     const close = closeByChange.get(name);
     const totalCommits = commitCounts.get(name) ?? 0;
@@ -762,10 +765,11 @@ export async function listChangesPage(params: ChangesParams): Promise<ChangesPag
     searchWhere,
   );
 
+  // Deduplicate: count distinct change names only
   const countRows = await db
     .select({
-      total: count(),
-      closed: sql<number>`count(*) FILTER (WHERE ${latestCloseAt} IS NOT NULL)`,
+      total: sql<number>`count(DISTINCT ${events.payload}->>'changeName')`,
+      closed: sql<number>`count(DISTINCT ${events.payload}->>'changeName') FILTER (WHERE ${latestCloseAt} IS NOT NULL)`,
     })
     .from(events)
     .where(where);
@@ -775,26 +779,44 @@ export async function listChangesPage(params: ChangesParams): Promise<ChangesPag
   const totalPages = Math.max(1, Math.ceil(total / CHANGE_LIST_PAGE_SIZE));
   const page = Math.min(params.page, totalPages);
 
-  const rows = await db
-    .select({
-      changeName,
-      username: events.username,
-      project: events.project,
-      workType: sql<string | null>`${events.payload}->>'workType'`,
-      title: sql<string | null>`${events.payload}->>'title'`,
-      estimateMin: sql<number | null>`NULLIF(${events.payload}->>'estimateMin', '')::double precision`,
-      estimateSource: sql<ChangeRecord['estimateSource'] | null>`${events.payload}->>'estimateSource'`,
-      estimateBucket: sql<string | null>`${events.payload}->>'estimateBucket'`,
-      openedAt: events.occurredAt,
-      closedAt: latestCloseAt,
-      durationMs: latestDurationMs,
-      totalCommits: commitCount,
-    })
-    .from(events)
-    .where(where)
-    .orderBy(sql`${latestCloseAt} IS NULL`, desc(latestCloseAt), desc(events.occurredAt))
-    .limit(CHANGE_LIST_PAGE_SIZE)
-    .offset((page - 1) * CHANGE_LIST_PAGE_SIZE);
+  // Use a subquery to get one row per changeName (earliest open event)
+  const rawRows = await db.execute(sql`
+    SELECT DISTINCT ON (payload->>'changeName')
+      payload->>'changeName' AS "changeName",
+      username,
+      project,
+      payload->>'workType' AS "workType",
+      payload->>'title' AS title,
+      NULLIF(payload->>'estimateMin', '')::double precision AS "estimateMin",
+      payload->>'estimateSource' AS "estimateSource",
+      payload->>'estimateBucket' AS "estimateBucket",
+      occurred_at AS "openedAt",
+      (SELECT max(ce.occurred_at) FROM events ce WHERE ce.event_type = 'change.close' AND ce.payload->>'changeName' = events.payload->>'changeName') AS "closedAt",
+      (SELECT NULLIF(ce.payload->>'durationMs', '')::double precision FROM events ce WHERE ce.event_type = 'change.close' AND ce.payload->>'changeName' = events.payload->>'changeName' ORDER BY ce.occurred_at DESC LIMIT 1) AS "durationMs",
+      (SELECT count(*) FROM events ce WHERE ce.event_type = 'change.commit' AND ce.payload->>'changeName' = events.payload->>'changeName') AS "totalCommits"
+    FROM events
+    WHERE event_type = 'change.open'
+      AND payload->>'changeName' IS NOT NULL
+      ${params.search ? sql`AND (payload->>'changeName' ILIKE ${searchPattern} OR username ILIKE ${searchPattern} OR project ILIKE ${searchPattern})` : sql``}
+    ORDER BY payload->>'changeName', occurred_at ASC
+    LIMIT ${CHANGE_LIST_PAGE_SIZE}
+    OFFSET ${(page - 1) * CHANGE_LIST_PAGE_SIZE}
+  `);
+
+  const rows = rawRows as unknown as Array<{
+    changeName: string;
+    username: string;
+    project: string;
+    workType: string | null;
+    title: string | null;
+    estimateMin: number | null;
+    estimateSource: string | null;
+    estimateBucket: string | null;
+    openedAt: Date;
+    closedAt: Date | null;
+    durationMs: number | null;
+    totalCommits: number;
+  }>;
 
   const records: ChangeRecord[] = rows.map((row) => {
     const workType = row.workType ?? 'feature';
@@ -803,7 +825,7 @@ export async function listChangesPage(params: ChangesParams): Promise<ChangesPag
       ? row.estimateMin!
       : (baselines[workType] ?? baselines.feature ?? 480);
     const estimateSource: ChangeRecord['estimateSource'] = hasPerChangeEstimate
-      ? (row.estimateSource ?? 'per-change')
+      ? ((row.estimateSource as ChangeRecord['estimateSource']) ?? 'per-change')
       : 'admin-default';
     const actualMin = row.closedAt && row.durationMs !== null ? row.durationMs / 60_000 : null;
     const savedMin = actualMin !== null ? Math.max(0, estimatedBaselineMin - actualMin) : null;
