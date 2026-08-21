@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Baseline OpenSpec New Change Detect",
+      "trigger": "PostFileCreate",
+      "description": "When a new file is created inside openspec/changes/, sync to detect new changes",
+      "matcher": "openspec/changes/",
+      "action": {
+        "type": "command",
+        "command": "baseline-cloud openspec sync 2>/dev/null; echo \"\"",
+        "timeout": 10
+      }
+    }
+  ]
+}

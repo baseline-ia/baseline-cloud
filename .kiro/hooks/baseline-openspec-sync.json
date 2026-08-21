@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Baseline OpenSpec Auto-Sync",
+      "trigger": "PostFileSave",
+      "description": "When any file inside openspec/changes/ is saved, sync with baseline-cloud to fire change.open events",
+      "matcher": "openspec/changes/",
+      "action": {
+        "type": "command",
+        "command": "baseline-cloud openspec sync 2>/dev/null; echo \"\"",
+        "timeout": 10
+      }
+    }
+  ]
+}

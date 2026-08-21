@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Baseline Cloud Session End",
+      "trigger": "Stop",
+      "description": "On session end: sync all open changes and flush telemetry queue",
+      "action": {
+        "type": "command",
+        "command": "baseline-cloud openspec sync 2>/dev/null; baseline-cloud cloud flush 2>/dev/null; echo \"\"",
+        "timeout": 15
+      }
+    }
+  ]
+}
