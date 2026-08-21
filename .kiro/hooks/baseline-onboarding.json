@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Baseline Onboarding Check",
+      "trigger": "SessionStart",
+      "description": "Checks project linking, cloud login, engram, and git hooks — surfaces missing items for conversational setup",
+      "action": {
+        "type": "command",
+        "command": ".kiro/scripts/onboarding-check.sh",
+        "timeout": 10
+      }
+    }
+  ]
+}
