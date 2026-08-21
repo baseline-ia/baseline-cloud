@@ -30,8 +30,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         <LoginForm next={next} />
 
-        <p className="help-text">
-          New here? Sign up via the API:
+        <div className="help-text">
+          <p>New here? Sign up via the API:</p>
           <pre
             style={{
               margin: '0.5rem 0 0',
@@ -46,7 +46,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   -H 'Content-Type: application/json' \\
   -d '{"username":"...","email":"...","password":"..."}'`}</code>
           </pre>
-        </p>
+        </div>
       </div>
     </div>
   );
