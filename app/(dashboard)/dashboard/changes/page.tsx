@@ -206,7 +206,7 @@ export default async function ChangesPage({
               </TableRow>
             )}
             {changes.map((c) => (
-              <TableRow key={`${c.changeName}-${c.openedAt.toISOString()}`}>
+              <TableRow key={`${c.changeName}-${String(c.openedAt)}`}>
                 <TableCell>
                   <div>
                     <code
