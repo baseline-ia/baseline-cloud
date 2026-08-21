@@ -149,7 +149,11 @@ export async function Sidebar({ session, locale, currentPath }: SidebarProps) {
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         <Link href="/dashboard">
-          <span className="logo">b</span>
+          {logo ? (
+            <img src={logo.dataUrl} alt="Logo" className="sidebar-custom-logo" />
+          ) : (
+            <span className="logo">b</span>
+          )}
           <span className="sidebar-brand-text">baseline-cloud</span>
         </Link>
         <SidebarCollapseToggle />
