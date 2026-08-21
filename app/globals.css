@@ -431,6 +431,8 @@
   body[data-sidebar-collapsed="true"] .sidebar-brand {
     justify-content: center;
     padding: 1rem 0.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   body[data-sidebar-collapsed="true"] .sidebar-brand a {
@@ -458,6 +460,7 @@
 
   body[data-sidebar-collapsed="true"] .sidebar-collapse-btn {
     margin-left: 0;
+    margin-top: 0.25rem;
   }
 
   @media (max-width: 767px) {
