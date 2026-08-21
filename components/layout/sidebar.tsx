@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { DashboardSession } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
+import { SidebarCollapseToggle } from './sidebar-collapse-toggle';
 import { isActive } from '@/lib/nav-utils';
 
 // ---------------------------------------------------------------------------
@@ -125,6 +126,10 @@ function navLabel(locale: string, key: string): string {
   return NAV_LABELS[locale]?.[key] ?? NAV_LABELS.en[key] ?? key;
 }
 
+function getInitials(username: string): string {
+  return username.slice(0, 2).toUpperCase();
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -139,12 +144,13 @@ export function Sidebar({ session, locale, currentPath }: SidebarProps) {
 
   return (
     <aside className="sidebar">
-      {/* Brand */}
+      {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         <Link href="/dashboard">
           <span className="logo">b</span>
-          baseline-cloud
+          <span className="sidebar-brand-text">baseline-cloud</span>
         </Link>
+        <SidebarCollapseToggle />
       </div>
 
       {/* Navigation groups */}
@@ -159,31 +165,45 @@ export function Sidebar({ session, locale, currentPath }: SidebarProps) {
                 key={link.key}
                 href={link.href}
                 className={`sidebar-link${isActive(link.href, currentPath) ? ' active' : ''}`}
+                title={navLabel(locale, link.label)}
               >
                 {NAV_ICONS[link.key]}
-                {navLabel(locale, link.label)}
+                <span className="sidebar-link-text">{navLabel(locale, link.label)}</span>
               </Link>
             ))}
           </div>
         ))}
       </nav>
 
-      {/* Footer */}
+      {/* Footer with user avatar */}
       <div className="sidebar-footer">
-        <a
-          href={switchLocalePath}
-          title={otherLocale === 'es' ? 'Español' : 'English'}
-          className="sidebar-link"
-        >
-          {locale.toUpperCase()}
-        </a>
-        <ThemeToggle />
-        <form method="post" action="/api/auth/logout">
-          <button type="submit" className="sidebar-link">
-            <LogOut size={14} />
-            {navLabel(locale, 'nav.logout')}
-          </button>
-        </form>
+        {/* Row 1: Avatar + user info */}
+        <div className="sidebar-user">
+          <div className="sidebar-avatar" title={session.username}>
+            {getInitials(session.username)}
+          </div>
+          <div className="sidebar-user-info">
+            <span className="sidebar-username">{session.username}</span>
+            <span className="sidebar-role">{session.role}</span>
+          </div>
+        </div>
+
+        {/* Row 2: Language + Theme + Logout */}
+        <div className="sidebar-footer-actions">
+          <a
+            href={switchLocalePath}
+            title={otherLocale === 'es' ? 'Español' : 'English'}
+            className="sidebar-link"
+          >
+            {locale.toUpperCase()}
+          </a>
+          <ThemeToggle />
+          <form method="post" action="/api/auth/logout">
+            <button type="submit" className="sidebar-link" title={navLabel(locale, 'nav.logout')}>
+              <LogOut size={14} />
+            </button>
+          </form>
+        </div>
       </div>
     </aside>
   );
