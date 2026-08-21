@@ -207,6 +207,14 @@
     flex-shrink: 0;
   }
 
+  .sidebar-custom-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--cl-radius-sm);
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
   .sidebar-group {
     padding: 1rem 0.75rem 0.5rem;
   }

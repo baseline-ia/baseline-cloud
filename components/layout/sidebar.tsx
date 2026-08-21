@@ -16,6 +16,7 @@ import type { DashboardSession } from '@/lib/auth';
 import { ThemeToggle } from './theme-toggle';
 import { SidebarCollapseToggle } from './sidebar-collapse-toggle';
 import { isActive } from '@/lib/nav-utils';
+import { getBrandingLogo } from '@/lib/services/branding';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -134,9 +135,10 @@ function getInitials(username: string): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function Sidebar({ session, locale, currentPath }: SidebarProps) {
+export async function Sidebar({ session, locale, currentPath }: SidebarProps) {
   const otherLocale = locale === 'es' ? 'en' : 'es';
   const switchLocalePath = `/dashboard/set-locale?locale=${otherLocale}&next=${encodeURIComponent(currentPath)}`;
+  const logo = await getBrandingLogo();
 
   const visibleGroups = NAV_GROUPS.filter(
     (group) => group.id !== 'admin' || session.role === 'admin',
@@ -147,7 +149,11 @@ export function Sidebar({ session, locale, currentPath }: SidebarProps) {
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         <Link href="/dashboard">
-          <span className="logo">b</span>
+          {logo ? (
+            <img src={logo.dataUrl} alt="Logo" className="sidebar-custom-logo" />
+          ) : (
+            <span className="logo">b</span>
+          )}
           <span className="sidebar-brand-text">baseline-cloud</span>
         </Link>
         <SidebarCollapseToggle />
