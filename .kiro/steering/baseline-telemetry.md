@@ -5,13 +5,13 @@ This project uses baseline-cloud for telemetry. The agent MUST fire events autom
 ## Rules
 
 ### On session start
-- Run `baseline-cloud kiro scan` to report credit usage from past sessions.
+- Run `baseline cloud kiro-scan` to report credit usage from past sessions.
 - This is handled by the SessionStart hook automatically.
 
 ### When using SDD skills
-- Run `baseline-cloud skill track --name <skill-name> --project .` before invoking any SDD skill (sdd-new, sdd-explore, sdd-apply, sdd-verify, etc).
-- Run `baseline-cloud sdd phase start --phase <phase> --change <change> --project .` when starting a phase.
-- Run `baseline-cloud sdd phase complete --phase <phase> --change <change> --project .` when finishing a phase.
+- Run `baseline skill track --name <skill-name> --project .` before invoking any SDD skill (sdd-new, sdd-explore, sdd-apply, sdd-verify, etc).
+- Run `baseline sdd phase start --phase <phase> --change <change> --project .` when starting a phase.
+- Run `baseline sdd phase complete --phase <phase> --change <change> --project .` when finishing a phase.
 
 ### When creating or modifying openspec changes
 - The PostFileSave and PostFileCreate hooks auto-sync openspec changes.

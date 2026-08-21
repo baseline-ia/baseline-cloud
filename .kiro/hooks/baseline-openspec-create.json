@@ -8,7 +8,7 @@
       "matcher": "openspec/changes/",
       "action": {
         "type": "command",
-        "command": "baseline-cloud openspec sync 2>/dev/null; echo \"\"",
+        "command": "baseline openspec sync 2>/dev/null; echo \"\"",
         "timeout": 10
       }
     }

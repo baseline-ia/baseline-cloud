@@ -7,7 +7,7 @@
       "description": "On session start: scan Kiro credits and sync any open OpenSpec changes to baseline-cloud",
       "action": {
         "type": "command",
-        "command": "baseline-cloud kiro scan 2>/dev/null; baseline-cloud openspec sync 2>/dev/null; echo \"\"",
+        "command": "baseline cloud kiro-scan 2>/dev/null; baseline openspec sync 2>/dev/null; echo \"\"",
         "timeout": 15
       }
     }

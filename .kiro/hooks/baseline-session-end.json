@@ -7,7 +7,7 @@
       "description": "On session end: sync all open changes and flush telemetry queue",
       "action": {
         "type": "command",
-        "command": "baseline-cloud openspec sync 2>/dev/null; baseline-cloud cloud flush 2>/dev/null; echo \"\"",
+        "command": "baseline openspec sync 2>/dev/null; baseline cloud flush 2>/dev/null; echo \"\"",
         "timeout": 15
       }
     }
