@@ -6,6 +6,7 @@ import { getTimeBaselines } from '@/lib/services/metrics'
 import { getBrandingLogo } from '@/lib/services/branding'
 import { SettingsForm } from './settings-form'
 import { LogoUploadForm } from './logo-upload-form'
+import { ThemePalettePicker } from '@/components/layout/theme-palette-picker'
 
 export default async function SettingsPage() {
   const cookieStore = await cookies()
@@ -65,6 +66,28 @@ export default async function SettingsPage() {
           </p>
         </div>
         <SettingsForm baselines={baselines} />
+      </div>
+
+      {/* Theme Palette */}
+      <div
+        style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--cl-radius)',
+          padding: '1.25rem 1.5rem',
+          boxShadow: 'var(--shadow-sm)',
+          marginTop: '1.5rem',
+        }}
+      >
+        <div style={{ marginBottom: '1.25rem' }}>
+          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 0.25rem' }}>
+            Theme Palette
+          </h2>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', margin: 0 }}>
+            Customize base color, accent color, and chart palette. Saved per browser.
+          </p>
+        </div>
+        <ThemePalettePicker />
       </div>
     </div>
   )
