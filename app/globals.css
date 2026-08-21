@@ -229,9 +229,26 @@
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--border-color);
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 0.5rem;
     flex-shrink: 0;
+  }
+
+  .sidebar-footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .sidebar-logout-form {
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .sidebar-toggle {
@@ -381,7 +398,8 @@
   body[data-sidebar-collapsed="true"] .sidebar-link-text,
   body[data-sidebar-collapsed="true"] .sidebar-group-header,
   body[data-sidebar-collapsed="true"] .sidebar-user-info,
-  body[data-sidebar-collapsed="true"] .sidebar-footer-actions {
+  body[data-sidebar-collapsed="true"] .sidebar-footer-actions,
+  body[data-sidebar-collapsed="true"] .sidebar-logout-form {
     display: none;
   }
 

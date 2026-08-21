@@ -177,16 +177,25 @@ export function Sidebar({ session, locale, currentPath }: SidebarProps) {
 
       {/* Footer with user avatar */}
       <div className="sidebar-footer">
-        <div className="sidebar-user">
-          <div className="sidebar-avatar" title={session.username}>
-            {getInitials(session.username)}
+        {/* Row 1: Avatar + user info | Logout button */}
+        <div className="sidebar-footer-row">
+          <div className="sidebar-user">
+            <div className="sidebar-avatar" title={session.username}>
+              {getInitials(session.username)}
+            </div>
+            <div className="sidebar-user-info">
+              <span className="sidebar-username">{session.username}</span>
+              <span className="sidebar-role">{session.role}</span>
+            </div>
           </div>
-          <div className="sidebar-user-info">
-            <span className="sidebar-username">{session.username}</span>
-            <span className="sidebar-role">{session.role}</span>
-          </div>
+          <form method="post" action="/api/auth/logout" className="sidebar-logout-form">
+            <button type="submit" className="sidebar-link" title={navLabel(locale, 'nav.logout')}>
+              <LogOut size={14} />
+            </button>
+          </form>
         </div>
 
+        {/* Row 2: Language + Theme */}
         <div className="sidebar-footer-actions">
           <a
             href={switchLocalePath}
@@ -196,12 +205,6 @@ export function Sidebar({ session, locale, currentPath }: SidebarProps) {
             {locale.toUpperCase()}
           </a>
           <ThemeToggle />
-          <form method="post" action="/api/auth/logout">
-            <button type="submit" className="sidebar-link" title={navLabel(locale, 'nav.logout')}>
-              <LogOut size={14} />
-              <span className="sidebar-link-text">{navLabel(locale, 'nav.logout')}</span>
-            </button>
-          </form>
         </div>
       </div>
     </aside>
