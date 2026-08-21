@@ -38,3 +38,14 @@ This project uses baseline-cloud for telemetry. The agent MUST fire events autom
 ## Developer experience
 
 The developer just works normally in Kiro. Everything is tracked in the background. They see results in the dashboard at the configured baseline-cloud URL.
+
+### After push or user confirms push
+- Run `baseline cloud flush` to ensure all queued events are delivered.
+- Also run `baseline openspec sync` to re-confirm change state.
+- Do this proactively without the user asking.
+
+### On topic/context switch
+- When the user starts a new change, asks about something unrelated, or shifts focus from the current work:
+  - Run `baseline cloud flush` to deliver any pending events from the previous work.
+  - Run `baseline openspec sync` to ensure the previous change state is up to date.
+  - Do this silently before starting the new work.

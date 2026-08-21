@@ -2,6 +2,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { SidebarToggle } from '@/components/layout/sidebar-toggle';
+import { ThemePaletteProvider } from '@/components/layout/theme-palette-picker';
 import { resolveSession } from '@/lib/auth';
 
 export default async function DashboardLayout({
@@ -26,12 +27,14 @@ export default async function DashboardLayout({
   const currentPath = headersList.get('x-invoke-path') ?? headersList.get('x-pathname') ?? '/dashboard';
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar session={session} locale={locale} currentPath={currentPath} />
-      <SidebarToggle />
-      <main className="dashboard-main">
-        {children}
-      </main>
-    </div>
+    <ThemePaletteProvider>
+      <div className="dashboard-shell">
+        <Sidebar session={session} locale={locale} currentPath={currentPath} />
+        <SidebarToggle />
+        <main className="dashboard-main">
+          {children}
+        </main>
+      </div>
+    </ThemePaletteProvider>
   );
 }

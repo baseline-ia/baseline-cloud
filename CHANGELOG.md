@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **Collapsible sidebar** — Desktop toggle to collapse/expand the sidebar to icon-only mode (60px). State persists in localStorage.
+- **User avatar** — Shows user initials, username, and role in the sidebar footer.
+- **Uniform footer actions** — Language, theme, and logout buttons in a 36px 3-column grid.
+
 
 - Return `assigned_skills` from CLI project enrollment so the client can synchronize corporate skills automatically.
 - Corporate skills are global to every project; project assignment controls and storage were removed, and migration `0003_black_mauler` drops the obsolete `project_skill_assignments` table.
